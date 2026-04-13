@@ -1,0 +1,166 @@
+@page "/groups"
+@inject AppDbContext Db
+
+<PageTitle>Channel Groups — Linnet</PageTitle>
+
+<div class="max-w-3xl space-y-6">
+
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold">Channel Groups</h1>
+            <p class="text-base-content/50 text-sm mt-1">Organise channels into named groups</p>
+        </div>
+        <button class="btn btn-primary btn-sm" @onclick="OpenCreate">New Group</button>
+    </div>
+
+    <div class="card bg-base-100 shadow">
+        @if (_groups.Count == 0)
+        {
+            <div class="card-body items-center text-center py-12 text-base-content/40">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <p class="font-medium">No groups yet</p>
+                <p class="text-sm">Click <strong>New Group</strong> to get started</p>
+            </div>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="table table-zebra">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Created</th>
+                            <th class="w-24"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var group in _groups)
+                        {
+                            <tr>
+                                <td class="font-medium">
+                                    <a href="/groups/@group.Id" class="link link-hover">@group.Name</a>
+                                </td>
+                                <td class="text-base-content/50 text-sm">@group.CreatedAt.ToLocalTime().ToString("d MMM yyyy")</td>
+                                <td>
+                                    <div class="flex gap-2 justify-end">
+                                        <button class="btn btn-ghost btn-xs" @onclick="() => OpenEdit(group)">Edit</button>
+                                        <button class="btn btn-ghost btn-xs text-error" @onclick="() => OpenDelete(group)">Delete</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Create / Edit modal -->
+<dialog class="modal @(_showFormModal ? "modal-open" : "")">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">@(_editing is null ? "New Group" : "Edit Group")</h3>
+        <label class="form-control w-full">
+            <div class="label">
+                <span class="label-text">Name</span>
+            </div>
+            <input type="text" class="input input-bordered w-full" placeholder="e.g. Sports, News…"
+                   @bind="_formName" @bind:event="oninput" @onkeydown="OnFormKeyDown" />
+        </label>
+        <div class="modal-action">
+            <button class="btn btn-ghost" @onclick="CloseFormModal">Cancel</button>
+            <button class="btn btn-primary" disabled="@string.IsNullOrWhiteSpace(_formName)" @onclick="SaveGroup">Save</button>
+        </div>
+    </div>
+    <div class="modal-backdrop" @onclick="CloseFormModal"></div>
+</dialog>
+
+<!-- Delete confirmation modal -->
+<dialog class="modal @(_showDeleteModal ? "modal-open" : "")">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Delete "@_deleting?.Name"?</h3>
+        <p class="py-4 text-base-content/60">This will permanently remove the group and all its channel assignments.</p>
+        <div class="modal-action">
+            <button class="btn btn-ghost" @onclick="CloseDeleteModal">Cancel</button>
+            <button class="btn btn-error" @onclick="ConfirmDelete">Delete</button>
+        </div>
+    </div>
+    <div class="modal-backdrop" @onclick="CloseDeleteModal"></div>
+</dialog>
+
+@code {
+    private List<ChannelGroup> _groups = [];
+    private bool _showFormModal;
+    private bool _showDeleteModal;
+    private ChannelGroup? _editing;
+    private ChannelGroup? _deleting;
+    private string _formName = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGroups();
+    }
+
+    private async Task LoadGroups()
+    {
+        _groups = await Db.ChannelGroups.OrderBy(g => g.Name).ToListAsync();
+    }
+
+    private void OpenCreate()
+    {
+        _editing = null;
+        _formName = "";
+        _showFormModal = true;
+    }
+
+    private void OpenEdit(ChannelGroup group)
+    {
+        _editing = group;
+        _formName = group.Name;
+        _showFormModal = true;
+    }
+
+    private void OpenDelete(ChannelGroup group)
+    {
+        _deleting = group;
+        _showDeleteModal = true;
+    }
+
+    private void CloseFormModal() => _showFormModal = false;
+    private void CloseDeleteModal() => _showDeleteModal = false;
+
+    private async Task OnFormKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_formName))
+            await SaveGroup();
+    }
+
+    private async Task SaveGroup()
+    {
+        if (string.IsNullOrWhiteSpace(_formName)) return;
+
+        if (_editing is null)
+        {
+            Db.ChannelGroups.Add(new ChannelGroup { Name = _formName.Trim() });
+        }
+        else
+        {
+            _editing.Name = _formName.Trim();
+        }
+
+        await Db.SaveChangesAsync();
+        _showFormModal = false;
+        await LoadGroups();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_deleting is null) return;
+        Db.ChannelGroups.Remove(_deleting);
+        await Db.SaveChangesAsync();
+        _showDeleteModal = false;
+        await LoadGroups();
+    }
+}

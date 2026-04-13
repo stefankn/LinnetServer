@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.4" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.4">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+    </ItemGroup>
+
+    <Target Name="NpmInstall" BeforeTargets="CustomLibs">
+        <Exec Command="npm install" />
+    </Target>
+
+    <Target Name="CustomLibs" BeforeTargets="Compile">
+        <Exec Condition="'$(Configuration)' != 'Release' " Command="npx @tailwindcss/cli -i ./Components/app.css -o ./wwwroot/app.css" />
+        <Exec Condition="'$(Configuration)' == 'Release' " Command="npx @tailwindcss/cli -i ./Components/app.css -o ./wwwroot/app.css --minify" />
+        <Exec Condition="'$(Configuration)' != 'Release' " Command="./node_modules/.bin/esbuild ./Components/app.js --bundle --outfile=./wwwroot/app.js" />
+        <Exec Condition="'$(Configuration)' == 'Release' " Command="./node_modules/.bin/esbuild ./Components/app.js --bundle --minify --outfile=./wwwroot/app.js" />
+    </Target>
+
+</Project>

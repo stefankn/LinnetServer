@@ -1,0 +1,443 @@
+@page "/groups/{Id:int}"
+@inject AppDbContext Db
+@inject NavigationManager Nav
+@inject ApiClient Api
+
+@if (_group is null)
+{
+    <div class="flex justify-center py-20">
+        <span class="loading loading-spinner loading-lg"></span>
+    </div>
+}
+else
+{
+    <PageTitle>@_group.Name — Linnet</PageTitle>
+
+    <div class="max-w-4xl space-y-6">
+
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="/groups" class="btn btn-ghost btn-sm btn-square">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </a>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-2xl font-bold">@_group.Name</h1>
+                        <button class="btn btn-ghost btn-xs btn-square" @onclick="OpenRenameModal" title="Rename group">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H7v-3a2 2 0 01.586-1.414z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="text-base-content/50 text-sm mt-0.5">@_items.Count channel@(_items.Count == 1 ? "" : "s")</p>
+                </div>
+            </div>
+            <button class="btn btn-primary btn-sm" @onclick="OpenAddModal">Add Channels</button>
+        </div>
+
+        <div class="card bg-base-100 shadow">
+            @if (_items.Count == 0)
+            {
+                <div class="card-body items-center text-center py-12 text-base-content/40">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.89L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                    </svg>
+                    <p class="font-medium">No channels in this group</p>
+                </div>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th class="w-10">#</th>
+                                <th>Channel</th>
+                                <th>EPG ID</th>
+                                <th class="w-16 text-center">Adult</th>
+                                <th class="w-10"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in _items)
+                            {
+                                <tr class="group">
+                                    <td class="text-base-content/40 text-sm">@item.SortOrder</td>
+                                    <td>
+                                        <div class="flex items-center gap-3">
+                                            @if (!string.IsNullOrEmpty(item.StreamIcon))
+                                            {
+                                                <img src="@item.StreamIcon" alt="" class="h-8 w-8 object-contain rounded" />
+                                            }
+                                            else
+                                            {
+                                                <div class="h-8 w-8 rounded bg-base-200"></div>
+                                            }
+                                            @if (_editingItem == item)
+                                            {
+                                                <input class="input input-bordered input-sm flex-1"
+                                                       @bind="_editingName" @bind:event="oninput"
+                                                       @onkeydown="OnChannelRenameKeyDown" />
+                                            }
+                                            else
+                                            {
+                                                <span class="font-medium">@item.ChannelName</span>
+                                                <button class="btn btn-ghost btn-xs btn-square opacity-0 group-hover:opacity-100" @onclick="() => StartEditChannel(item)" title="Rename channel">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H7v-3a2 2 0 01.586-1.414z" />
+                                                    </svg>
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td class="text-base-content/50 text-sm">@(string.IsNullOrEmpty(item.EpgChannelId) ? "—" : item.EpgChannelId)</td>
+                                    <td class="text-center">
+                                        @if (item.IsAdult)
+                                        {
+                                            <span class="badge badge-error badge-sm">18+</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (_editingItem == item)
+                                        {
+                                            <div class="flex gap-1">
+                                                <button class="btn btn-ghost btn-xs text-success" @onclick="SaveChannelRename" disabled="@(string.IsNullOrWhiteSpace(_editingName))">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                </button>
+                                                <button class="btn btn-ghost btn-xs" @onclick="CancelEditChannel">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-ghost btn-xs text-error" @onclick="() => RemoveChannel(item)">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+    </div>
+}
+
+<!-- Rename Group modal -->
+<dialog class="modal @(_showRenameModal ? "modal-open" : "")">
+    <div class="modal-box max-w-sm">
+        <h3 class="font-bold text-lg mb-4">Rename Group</h3>
+        <input class="input input-bordered w-full" @bind="_renameValue" @bind:event="oninput"
+               @onkeydown="OnRenameKeyDown" placeholder="Group name" maxlength="100" />
+        @if (_renameError is not null)
+        {
+            <p class="text-error text-sm mt-2">@_renameError</p>
+        }
+        <div class="modal-action">
+            <button class="btn btn-ghost" @onclick="CloseRenameModal">Cancel</button>
+            <button class="btn btn-primary" @onclick="SaveRename" disabled="@(string.IsNullOrWhiteSpace(_renameValue))">Save</button>
+        </div>
+    </div>
+    <div class="modal-backdrop" @onclick="CloseRenameModal"></div>
+</dialog>
+
+<!-- Add Channels modal -->
+<dialog class="modal @(_showAddModal ? "modal-open" : "")">
+    <div class="modal-box w-11/12 max-w-2xl">
+        <div class="flex items-center gap-2 mb-4">
+            @if (_selectedCategory is not null)
+            {
+                <button class="btn btn-ghost btn-sm btn-square" @onclick="ClearCategory">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+            }
+            <h3 class="font-bold text-lg">
+                @if (_selectedCategory is null)
+                {
+                    <span>Select a Category</span>
+                }
+                else
+                {
+                    <span>@_selectedCategory.CategoryName</span>
+                }
+            </h3>
+        </div>
+
+        <div class="min-h-64 max-h-[60vh] overflow-y-auto">
+            @if (_loadingCategories || _loadingStreams)
+            {
+                <div class="flex justify-center py-12">
+                    <span class="loading loading-spinner loading-md"></span>
+                </div>
+            }
+            else if (_categoryError is not null)
+            {
+                <div class="alert alert-error">
+                    <span>@_categoryError</span>
+                </div>
+            }
+            else if (_selectedCategory is null)
+            {
+                @if (_categories.Count == 0)
+                {
+                    <p class="text-center text-base-content/40 py-8">No categories found.</p>
+                }
+                else
+                {
+                    <ul class="menu menu-sm bg-base-200 rounded-box w-full">
+                        @foreach (var cat in _categories)
+                        {
+                            <li>
+                                <button @onclick="() => SelectCategory(cat)" class="flex justify-between">
+                                    <span>@cat.CategoryName</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                }
+            }
+            else
+            {
+                @if (_streams.Count == 0)
+                {
+                    <p class="text-center text-base-content/40 py-8">No channels in this category.</p>
+                }
+                else
+                {
+                    <ul class="menu menu-sm bg-base-200 rounded-box w-full">
+                        @foreach (var stream in _streams)
+                        {
+                            <li>
+                                <span class="flex items-center gap-3 cursor-default">
+                                    @if (!string.IsNullOrEmpty(stream.StreamIcon))
+                                    {
+                                        <img src="@stream.StreamIcon" alt="" class="h-12 w-12 object-contain rounded flex-shrink-0" />
+                                    }
+                                    else
+                                    {
+                                        <div class="h-6 w-6 rounded bg-base-300 flex-shrink-0"></div>
+                                    }
+                                    <span class="flex-1 truncate">@stream.Name</span>
+                                    @if (stream.IsAdult != 0)
+                                    {
+                                        <span class="badge badge-error badge-xs flex-shrink-0">18+</span>
+                                    }
+                                    @if (_addedStreamIds.Contains(stream.StreamId))
+                                    {
+                                        <span class="btn btn-xs btn-disabled flex-shrink-0">Added</span>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-xs btn-primary flex-shrink-0" @onclick="() => AddChannel(stream)">Add</button>
+                                    }
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                }
+            }
+        </div>
+
+        <div class="modal-action">
+            <button class="btn btn-ghost" @onclick="CloseAddModal">Close</button>
+        </div>
+    </div>
+    <div class="modal-backdrop" @onclick="CloseAddModal"></div>
+</dialog>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private ChannelGroup? _group;
+    private List<ChannelGroupItem> _items = [];
+
+    private HashSet<int> _addedStreamIds = [];
+
+    private ChannelGroupItem? _editingItem;
+    private string _editingName = string.Empty;
+
+    private bool _showRenameModal;
+    private string _renameValue = string.Empty;
+    private string? _renameError;
+
+    private bool _showAddModal;
+    private bool _loadingCategories;
+    private bool _loadingStreams;
+    private string? _categoryError;
+    private List<LiveCategoryResponse> _categories = [];
+    private LiveCategoryResponse? _selectedCategory;
+    private List<LiveStreamResponse> _streams = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _group = await Db.ChannelGroups.FindAsync(Id);
+        if (_group is null)
+        {
+            Nav.NavigateTo("/groups");
+            return;
+        }
+
+        _items = await Db.ChannelGroupItems
+            .Where(i => i.ChannelGroupId == Id)
+            .OrderBy(i => i.SortOrder)
+            .ThenBy(i => i.ChannelName)
+            .ToListAsync();
+
+        _addedStreamIds = _items.Select(i => i.StreamId).ToHashSet();
+    }
+
+    private void StartEditChannel(ChannelGroupItem item)
+    {
+        _editingItem = item;
+        _editingName = item.ChannelName;
+    }
+
+    private void CancelEditChannel() => _editingItem = null;
+
+    private async Task SaveChannelRename()
+    {
+        var name = _editingName.Trim();
+        if (string.IsNullOrEmpty(name) || _editingItem is null) return;
+
+        _editingItem.ChannelName = name;
+        await Db.SaveChangesAsync();
+        _editingItem = null;
+    }
+
+    private async Task OnChannelRenameKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await SaveChannelRename();
+        else if (e.Key == "Escape") CancelEditChannel();
+    }
+
+    private void OpenRenameModal()
+    {
+        _renameValue = _group!.Name;
+        _renameError = null;
+        _showRenameModal = true;
+    }
+
+    private void CloseRenameModal() => _showRenameModal = false;
+
+    private async Task SaveRename()
+    {
+        var name = _renameValue.Trim();
+        if (string.IsNullOrEmpty(name)) return;
+
+        var duplicate = await Db.ChannelGroups.AnyAsync(g => g.Name == name && g.Id != Id);
+        if (duplicate)
+        {
+            _renameError = "A group with that name already exists.";
+            return;
+        }
+
+        _group!.Name = name;
+        await Db.SaveChangesAsync();
+        _showRenameModal = false;
+    }
+
+    private async Task OnRenameKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await SaveRename();
+        else if (e.Key == "Escape") CloseRenameModal();
+    }
+
+    private async Task OpenAddModal()
+    {
+        _selectedCategory = null;
+        _streams = [];
+        _categoryError = null;
+        _showAddModal = true;
+
+        _loadingCategories = true;
+        try
+        {
+            _categories = await Api.GetLiveCategoriesAsync();
+        }
+        catch (Exception ex)
+        {
+            _categoryError = $"Failed to load categories: {ex.Message}";
+        }
+        finally
+        {
+            _loadingCategories = false;
+        }
+    }
+
+    private async Task SelectCategory(LiveCategoryResponse category)
+    {
+        _selectedCategory = category;
+        _streams = [];
+        _categoryError = null;
+        _loadingStreams = true;
+        try
+        {
+            _streams = await Api.GetLiveStreamsAsync(category.CategoryId);
+        }
+        catch (Exception ex)
+        {
+            _categoryError = $"Failed to load channels: {ex.Message}";
+        }
+        finally
+        {
+            _loadingStreams = false;
+        }
+    }
+
+    private void ClearCategory()
+    {
+        _selectedCategory = null;
+        _streams = [];
+        _categoryError = null;
+    }
+
+    private async Task AddChannel(LiveStreamResponse stream)
+    {
+        var nextOrder = _items.Count > 0 ? _items.Max(i => i.SortOrder) + 1 : 1;
+        var item = new ChannelGroupItem
+        {
+            ChannelGroupId = Id,
+            StreamId = stream.StreamId,
+            ChannelName = stream.Name,
+            StreamIcon = stream.StreamIcon,
+            CategoryId = stream.CategoryId,
+            IsAdult = stream.IsAdult != 0,
+            EpgChannelId = stream.EpgChannelId,
+            SortOrder = nextOrder,
+        };
+
+        Db.ChannelGroupItems.Add(item);
+        await Db.SaveChangesAsync();
+
+        _items.Add(item);
+        _addedStreamIds.Add(stream.StreamId);
+    }
+
+    private async Task RemoveChannel(ChannelGroupItem item)
+    {
+        Db.ChannelGroupItems.Remove(item);
+        await Db.SaveChangesAsync();
+
+        _items.Remove(item);
+        _addedStreamIds.Remove(item.StreamId);
+    }
+
+    private void CloseAddModal() => _showAddModal = false;
+}

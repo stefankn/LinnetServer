@@ -1,0 +1,60 @@
+@page "/"
+@inject LinnetServer.Services.ApiClient ApiClient
+
+<PageTitle>Dashboard — Linnet</PageTitle>
+
+<div class="max-w-2xl space-y-6">
+
+    <div>
+        <h1 class="text-2xl font-bold">Dashboard</h1>
+        <p class="text-base-content/50 text-sm mt-1">Account overview</p>
+    </div>
+
+    @if (_accountInfo is null)
+    {
+        <div class="card bg-base-100 shadow">
+            <div class="card-body gap-4">
+                <div class="skeleton h-4 w-32 rounded"></div>
+                <div class="skeleton h-4 w-48 rounded"></div>
+                <div class="skeleton h-4 w-40 rounded"></div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title text-base">Account Info</h2>
+                <div class="divider my-1"></div>
+                <dl class="grid grid-cols-[auto_1fr] gap-x-8 gap-y-3 text-sm">
+                    <dt class="text-base-content/50 font-medium">Message</dt>
+                    <dd>@_accountInfo.Message</dd>
+
+                    <dt class="text-base-content/50 font-medium">Status</dt>
+                    <dd>
+                        @if (_accountInfo.Status == "Active")
+                        {
+                            <span class="badge badge-success badge-sm">@_accountInfo.Status</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-error badge-sm">@_accountInfo.Status</span>
+                        }
+                    </dd>
+
+                    <dt class="text-base-content/50 font-medium">Expiry Date</dt>
+                    <dd>@(DateTimeOffset.FromUnixTimeSeconds(long.Parse(_accountInfo.ExpDate)).LocalDateTime.ToString("d MMMM yyyy"))</dd>
+                </dl>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private LinnetServer.Services.AccountInfoResponse? _accountInfo;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _accountInfo = await ApiClient.GetAccountInfoAsync();
+    }
+}
