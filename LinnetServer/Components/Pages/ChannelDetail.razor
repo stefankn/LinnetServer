@@ -1,0 +1,179 @@
+@page "/groups/{GroupId:int}/channels/{ItemId:int}"
+@inject AppDbContext Db
+@inject NavigationManager Nav
+@inject EpgUpdateQueue EpgQueue
+@implements IDisposable
+
+@if (_item is null)
+{
+    <div class="flex justify-center py-20">
+        <span class="loading loading-spinner loading-lg"></span>
+    </div>
+}
+else
+{
+    <PageTitle>@_item.ChannelName — Linnet</PageTitle>
+
+    <div class="max-w-4xl space-y-6">
+
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="/groups/@GroupId" class="btn btn-ghost btn-sm btn-square">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </a>
+                <div class="flex items-center gap-3">
+                    @if (!string.IsNullOrEmpty(_item.StreamIcon))
+                    {
+                        <img src="@_item.StreamIcon" alt="" class="h-10 w-10 object-contain rounded" />
+                    }
+                    <div>
+                        <h1 class="text-2xl font-bold">@_item.ChannelName</h1>
+                        @if (_item.EpgLastUpdated is not null)
+                        {
+                            <p class="text-base-content/50 text-sm mt-0.5">EPG updated @_item.EpgLastUpdated.Value.ToLocalTime().ToString("g")</p>
+                        }
+                    </div>
+                </div>
+            </div>
+            @if (EpgQueue.IsInProgress(ItemId))
+            {
+                <button class="btn btn-sm" disabled>
+                    <span class="loading loading-spinner loading-xs"></span>
+                    Updating…
+                </button>
+            }
+            else
+            {
+                <button class="btn btn-sm" @onclick="RefreshEpg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Refresh EPG
+                </button>
+            }
+        </div>
+
+        @if (_programsByDay.Count == 0)
+        {
+            <div class="card bg-base-100 shadow">
+                <div class="card-body items-center text-center py-12 text-base-content/40">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p class="font-medium">No program guide available</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            @foreach (var (day, programs) in _programsByDay)
+            {
+                <div class="space-y-2">
+                    <h2 class="text-sm font-semibold text-base-content/50 uppercase tracking-wide px-1">
+                        @FormatDay(day)
+                    </h2>
+                    <div class="card bg-base-100 shadow">
+                        <div class="divide-y divide-base-200">
+                            @foreach (var program in programs)
+                            {
+                                var isNow = program.StartTime <= DateTime.UtcNow && program.EndTime >= DateTime.UtcNow;
+                                <div class="px-4 py-3 flex gap-4 @(isNow ? "bg-primary/5" : "")">
+                                    <div class="w-32 shrink-0 text-sm text-base-content/50 pt-0.5">
+                                        @program.StartTime.ToLocalTime().ToString("HH:mm")
+                                        <span class="mx-0.5">–</span>
+                                        @program.EndTime.ToLocalTime().ToString("HH:mm")
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-medium @(isNow ? "text-primary" : "")">@program.Title</span>
+                                            @if (isNow)
+                                            {
+                                                <span class="badge badge-primary badge-xs">Now</span>
+                                            }
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(program.Description))
+                                        {
+                                            <p class="text-sm text-base-content/50 mt-0.5 line-clamp-2">@program.Description</p>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+
+    </div>
+}
+
+@code {
+    [Parameter] public int GroupId { get; set; }
+    [Parameter] public int ItemId { get; set; }
+
+    private ChannelGroupItem? _item;
+    private SortedDictionary<DateOnly, List<ChannelProgram>> _programsByDay = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        EpgQueue.OnChanged += OnEpgQueueChanged;
+        _item = await Db.ChannelGroupItems.FindAsync(ItemId);
+        if (_item is null || _item.ChannelGroupId != GroupId)
+        {
+            Nav.NavigateTo($"/groups/{GroupId}");
+            return;
+        }
+
+        await LoadProgramsAsync();
+    }
+
+    private async Task LoadProgramsAsync()
+    {
+        await Db.Entry(_item!).ReloadAsync();
+
+        var now = DateTime.UtcNow;
+        var programs = await Db.ChannelPrograms
+            .Where(p => p.ChannelGroupItemId == ItemId && p.EndTime >= now)
+            .OrderBy(p => p.StartTime)
+            .ToListAsync();
+
+        _programsByDay = new SortedDictionary<DateOnly, List<ChannelProgram>>();
+        foreach (var program in programs)
+        {
+            var day = DateOnly.FromDateTime(program.StartTime.ToLocalTime());
+            if (!_programsByDay.TryGetValue(day, out var list))
+            {
+                list = [];
+                _programsByDay[day] = list;
+            }
+            list.Add(program);
+        }
+    }
+
+    private void RefreshEpg()
+    {
+        EpgQueue.Enqueue(ItemId);
+    }
+
+    private void OnEpgQueueChanged() =>
+        InvokeAsync(async () =>
+        {
+            if (!EpgQueue.IsInProgress(ItemId))
+                await LoadProgramsAsync();
+            StateHasChanged();
+        });
+
+    public void Dispose() =>
+        EpgQueue.OnChanged -= OnEpgQueueChanged;
+
+    private string FormatDay(DateOnly day)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        return day == today ? "Today" :
+               day == today.AddDays(-1) ? "Yesterday" :
+               day == today.AddDays(1) ? "Tomorrow" :
+               day.ToString("dddd, MMMM d");
+    }
+}

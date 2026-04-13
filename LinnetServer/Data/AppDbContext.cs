@@ -7,4 +7,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<ChannelGroup> ChannelGroups => Set<ChannelGroup>();
     public DbSet<ChannelGroupItem> ChannelGroupItems => Set<ChannelGroupItem>();
+    public DbSet<ChannelProgram> ChannelPrograms => Set<ChannelProgram>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ChannelProgram>()
+            .HasOne(p => p.ChannelGroupItem)
+            .WithMany(i => i.Programs)
+            .HasForeignKey(p => p.ChannelGroupItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
 }

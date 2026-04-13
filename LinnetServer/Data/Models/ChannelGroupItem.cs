@@ -12,5 +12,8 @@ public class ChannelGroupItem
     public string EpgChannelId { get; set; } = string.Empty;
     public int SortOrder { get; set; }
 
+    public DateTime? EpgLastUpdated { get; set; }
+
     public ChannelGroup ChannelGroup { get; set; } = null!;
+    public ICollection<ChannelProgram> Programs { get; set; } = [];
 }

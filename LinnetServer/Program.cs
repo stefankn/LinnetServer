@@ -12,6 +12,9 @@ builder.Services.Configure<ApiClientOptions>(
     builder.Configuration.GetSection(ApiClientOptions.SectionName));
 builder.Services.AddHttpClient<ApiClient>();
 
+builder.Services.AddSingleton<EpgUpdateQueue>();
+builder.Services.AddHostedService<EpgWorker>();
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

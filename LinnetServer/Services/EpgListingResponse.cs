@@ -28,6 +28,6 @@ public class EpgListingResponse
     [JsonPropertyName("start_timestamp")]
     public string StartTimestamp { get; set; } = string.Empty;
 
-    [JsonPropertyName("end_timestamp")]
+    [JsonPropertyName("stop_timestamp")]
     public string EndTimestamp { get; set; } = string.Empty;
 }
