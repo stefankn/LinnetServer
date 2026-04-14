@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LinnetServer.Services;
 
-public class EpgWorker(
+public partial class EpgWorker(
     EpgUpdateQueue queue,
     IServiceScopeFactory scopeFactory,
     ILogger<EpgWorker> logger) : BackgroundService
@@ -30,15 +30,14 @@ public class EpgWorker(
                     catch (HttpRequestException ex) when (attempt < MaxRetries)
                     {
                         var delay = RetryDelays[attempt - 1];
-                        logger.LogWarning("EPG fetch failed for ChannelGroupItem {Id} (attempt {Attempt}/{Max}), retrying in {Delay}s: {Message}",
-                            channelGroupItemId, attempt, MaxRetries, delay.TotalSeconds, ex.Message);
+                        LogEpgFetchRetry(logger, channelGroupItemId, attempt, MaxRetries, (int)delay.TotalSeconds, ex.Message);
                         await Task.Delay(delay, ct);
                     }
                 }
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to update EPG for ChannelGroupItem {Id} after {Max} attempts", channelGroupItemId, MaxRetries);
+                LogEpgUpdateFailed(logger, ex, channelGroupItemId, MaxRetries);
             }
             finally
             {
@@ -56,18 +55,13 @@ public class EpgWorker(
         var item = await db.ChannelGroupItems.FindAsync([channelGroupItemId], ct);
         if (item is null)
         {
-            logger.LogWarning("ChannelGroupItem {Id} not found, skipping EPG update", channelGroupItemId);
+            LogChannelGroupItemNotFound(logger, channelGroupItemId);
             return;
         }
 
-        logger.LogInformation("Fetching EPG guide for channel {Name} (stream {StreamId})", item.ChannelName, item.StreamId);
+        LogFetchingEpg(logger, item.ChannelName, item.StreamId);
 
         var listings = await api.GetEpgGuideAsync(item.StreamId);
-
-        // Remove existing programs for this item before reinserting
-        await db.ChannelPrograms
-            .Where(p => p.ChannelGroupItemId == channelGroupItemId)
-            .ExecuteDeleteAsync(ct);
 
         var programs = listings
             .Where(l => long.TryParse(l.StartTimestamp, out _) && long.TryParse(l.EndTimestamp, out _))
@@ -82,6 +76,12 @@ public class EpgWorker(
                 EndTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(l.EndTimestamp)).UtcDateTime,
             }).ToList();
 
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+
+        await db.ChannelPrograms
+            .Where(p => p.ChannelGroupItemId == channelGroupItemId)
+            .ExecuteDeleteAsync(ct);
+
         for (var i = 0; i < programs.Count; i += BatchSize)
         {
             db.ChannelPrograms.AddRange(programs.Skip(i).Take(BatchSize));
@@ -91,7 +91,9 @@ public class EpgWorker(
         item.EpgLastUpdated = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
 
-        logger.LogInformation("EPG update complete for channel {Name}: {Count} programs stored", item.ChannelName, programs.Count);
+        await tx.CommitAsync(ct);
+
+        LogEpgUpdateComplete(logger, item.ChannelName, programs.Count);
     }
 
     private static string DecodeBase64(string value)
@@ -106,4 +108,19 @@ public class EpgWorker(
             return value;
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "ChannelGroupItem {Id} not found, skipping EPG update")]
+    private static partial void LogChannelGroupItemNotFound(ILogger logger, int id);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Fetching EPG guide for channel {Name} (stream {StreamId})")]
+    private static partial void LogFetchingEpg(ILogger logger, string name, int streamId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "EPG fetch failed for ChannelGroupItem {Id} (attempt {Attempt}/{Max}), retrying in {Delay}s: {Message}")]
+    private static partial void LogEpgFetchRetry(ILogger logger, int id, int attempt, int max, int delay, string message);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to update EPG for ChannelGroupItem {Id} after {Max} attempts")]
+    private static partial void LogEpgUpdateFailed(ILogger logger, Exception ex, int id, int max);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "EPG update complete for channel {Name}: {Count} programs stored")]
+    private static partial void LogEpgUpdateComplete(ILogger logger, string name, int count);
 }

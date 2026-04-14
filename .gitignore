@@ -48,3 +48,6 @@ Thumbs.db
 *.pfx
 *.p12
 secrets.json
+
+## Logs
+logs/
