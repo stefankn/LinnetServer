@@ -1,12 +1,14 @@
 using LinnetServer.Data;
+using LinnetServer.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace LinnetServer.Controllers;
 
 [ApiController]
 [Route("api/v1/groups")]
-public class GroupsController(AppDbContext db) : ControllerBase
+public class GroupsController(AppDbContext db, IOptions<ApiClientOptions> apiOptions) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetGroups() =>
@@ -21,12 +23,23 @@ public class GroupsController(AppDbContext db) : ControllerBase
         if (!await db.ChannelGroups.AnyAsync(g => g.Id == id))
             return NotFound();
 
+        var opts = apiOptions.Value;
         var channels = await db.ChannelGroupItems
             .Where(c => c.ChannelGroupId == id)
             .OrderBy(c => c.SortOrder)
-            .Select(c => new { c.Id, c.ChannelName, c.StreamId, c.StreamIcon, c.EpgChannelId })
+            .Select(c => new { c.Id, c.ChannelName, c.StreamId, c.StreamIcon, c.EpgChannelId, c.SortOrder })
             .ToListAsync();
 
-        return Ok(channels);
+        var result = channels.Select(c => new
+        {
+            c.Id,
+            c.ChannelName,
+            c.StreamId,
+            c.StreamIcon,
+            c.EpgChannelId,
+            StreamUrl = $"{opts.BaseUrl}/{opts.Username}/{opts.Password}/{c.StreamId}"
+        });
+
+        return Ok(result);
     }
 }
