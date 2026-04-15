@@ -28,20 +28,20 @@ A self-hosted IPTV management server built with ASP.NET Core 10 and Blazor. Orga
 
 ### Configuration
 
-Create or edit `appsettings.Development.json`:
+Copy `.env.example` to `.env` and fill in your values:
 
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=linnet;Username=linnet;Password=linnet"
-  },
-  "ApiClient": {
-    "BaseUrl": "http://your-iptv-provider.example.com",
-    "Username": "your-username",
-    "Password": "your-password"
-  }
-}
+```bash
+cp .env.example .env
 ```
+
+```ini
+ConnectionStrings__DefaultConnection=Host=localhost;Port=5432;Database=linnet;Username=linnet;Password=linnet
+ApiClient__BaseUrl=http://your-iptv-provider.example.com
+ApiClient__Username=your-username
+ApiClient__Password=your-password
+```
+
+The `.env` file is gitignored and never committed.
 
 ### Run Locally
 
@@ -60,10 +60,12 @@ API documentation is available at `/scalar/v1`.
 ### Run with Docker
 
 ```bash
+cp .env.example .env
+# Edit .env with your credentials, then:
 docker compose up
 ```
 
-This builds the server image and starts it alongside a PostgreSQL 17 instance. No other setup required.
+The compose file passes the `.env` variables into the container. Note that `Host` in the connection string should be `postgres` (the compose service name) instead of `localhost`.
 
 ## REST API
 

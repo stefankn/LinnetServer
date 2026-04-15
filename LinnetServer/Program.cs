@@ -1,9 +1,12 @@
+using DotNetEnv;
 using LinnetServer.Components;
 using LinnetServer.Data;
 using LinnetServer.Services;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Serilog;
+
+Env.TraversePath().Load();
 
 // Bootstrap logger captures startup errors before configuration is loaded
 Log.Logger = new LoggerConfiguration()

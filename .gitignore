@@ -48,6 +48,7 @@ Thumbs.db
 *.pfx
 *.p12
 secrets.json
+.env
 
 ## Logs
 logs/
