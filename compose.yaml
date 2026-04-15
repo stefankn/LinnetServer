@@ -5,6 +5,8 @@
       context: .
       dockerfile: LinnetServer/Dockerfile
     env_file: .env
+    ports:
+      - "8091:8080"
     depends_on:
       postgres:
         condition: service_healthy
