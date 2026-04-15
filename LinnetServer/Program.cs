@@ -27,6 +27,8 @@ try
 
     builder.Services.AddSingleton<EpgUpdateQueue>();
     builder.Services.AddHostedService<EpgWorker>();
+    builder.Services.AddSingleton<EpgRefreshWorker>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<EpgRefreshWorker>());
 
     builder.Services.AddRazorComponents()
         .AddInteractiveServerComponents();

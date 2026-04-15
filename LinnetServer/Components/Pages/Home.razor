@@ -1,5 +1,6 @@
 @page "/"
 @inject LinnetServer.Services.ApiClient ApiClient
+@inject LinnetServer.Services.EpgRefreshWorker EpgRefreshWorker
 
 <PageTitle>Dashboard — Linnet</PageTitle>
 
@@ -48,13 +49,38 @@
             </div>
         </div>
     }
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <h2 class="card-title text-base">EPG</h2>
+            <div class="divider my-1"></div>
+            <div class="flex items-center justify-between text-sm">
+                <span class="text-base-content/50">Refresh stale channels</span>
+                <button class="btn btn-sm btn-primary" disabled="@_epgRefreshing" @onclick="TriggerEpgRefreshAsync">
+                    @if (_epgRefreshing)
+                    {
+                        <span class="loading loading-spinner loading-xs"></span>
+                    }
+                    Refresh EPG
+                </button>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 @code {
     private LinnetServer.Services.AccountInfoResponse? _accountInfo;
+    private bool _epgRefreshing;
 
     protected override async Task OnInitializedAsync()
     {
         _accountInfo = await ApiClient.GetAccountInfoAsync();
+    }
+
+    private async Task TriggerEpgRefreshAsync()
+    {
+        _epgRefreshing = true;
+        await EpgRefreshWorker.CheckAndEnqueueStaleChannelsAsync();
+        _epgRefreshing = false;
     }
 }
