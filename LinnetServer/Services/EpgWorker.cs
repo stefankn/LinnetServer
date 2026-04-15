@@ -43,6 +43,8 @@ public partial class EpgWorker(
             {
                 queue.MarkCompleted(channelGroupItemId);
             }
+
+            await Task.Delay(TimeSpan.FromSeconds(5), ct);
         }
     }
 
