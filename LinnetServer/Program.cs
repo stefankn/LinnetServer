@@ -2,6 +2,7 @@ using LinnetServer.Components;
 using LinnetServer.Data;
 using LinnetServer.Services;
 using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
 using Serilog;
 
 // Bootstrap logger captures startup errors before configuration is loaded
@@ -30,6 +31,9 @@ try
     builder.Services.AddSingleton<EpgRefreshWorker>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<EpgRefreshWorker>());
 
+    builder.Services.AddControllers();
+    builder.Services.AddOpenApi();
+
     builder.Services.AddRazorComponents()
         .AddInteractiveServerComponents();
 
@@ -41,11 +45,19 @@ try
         app.UseHsts();
     }
 
+    if (app.Environment.IsDevelopment())
+    {
+        app.MapOpenApi();
+        app.MapScalarApiReference();
+    }
+
     app.UseSerilogRequestLogging();
     app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
     app.UseHttpsRedirection();
 
     app.UseAntiforgery();
+
+    app.MapControllers();
 
     app.MapStaticAssets();
     app.MapRazorComponents<App>()
