@@ -10,6 +10,7 @@ namespace LinnetServer.Controllers;
 [Route("api/v1/groups")]
 public class GroupsController(AppDbContext db, IOptions<ApiClientOptions> apiOptions) : ControllerBase
 {
+    /// <remarks>Returns all channel groups.</remarks>
     [HttpGet]
     public async Task<IActionResult> GetGroups() =>
         Ok(await db.ChannelGroups
@@ -17,6 +18,7 @@ public class GroupsController(AppDbContext db, IOptions<ApiClientOptions> apiOpt
             .Select(g => new { g.Id, g.Name })
             .ToListAsync());
 
+    /// <remarks>Returns all channels belonging to a group.</remarks>
     [HttpGet("{id}/channels")]
     public async Task<IActionResult> GetChannels(int id)
     {
