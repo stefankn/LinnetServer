@@ -27,16 +27,16 @@ public class ChannelsController(AppDbContext db) : ControllerBase
         return Ok(programs);
     }
 
-    /// <remarks>Returns the currently airing program for a channel.</remarks>
-    [HttpGet("{id}/guide/now")]
-    public async Task<IActionResult> GetCurrentProgram(int id)
+    /// <remarks>Returns the airing program for a channel at a given time. Defaults to now if no date is provided.</remarks>
+    [HttpGet("{id}/guide/program")]
+    public async Task<IActionResult> GetCurrentProgram(int id, [FromQuery] DateTime? at)
     {
         if (!await db.ChannelGroupItems.AnyAsync(c => c.Id == id))
             return NotFound();
 
-        var now = DateTime.UtcNow;
+        var time = at.HasValue ? at.Value.ToUniversalTime() : DateTime.UtcNow;
         var program = await db.ChannelPrograms
-            .Where(p => p.ChannelGroupItemId == id && p.StartTime <= now && p.EndTime >= now)
+            .Where(p => p.ChannelGroupItemId == id && p.StartTime <= time && p.EndTime >= time)
             .Select(p => new { p.Id, p.Title, p.Description, p.StartTime, p.EndTime })
             .FirstOrDefaultAsync();
 
