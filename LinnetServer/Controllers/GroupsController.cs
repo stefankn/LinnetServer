@@ -40,7 +40,7 @@ public class GroupsController(AppDbContext db, IOptions<ApiClientOptions> apiOpt
                 c.SortOrder,
                 CurrentProgram = c.Programs
                     .Where(p => p.StartTime <= now && p.EndTime >= now)
-                    .Select(p => new { p.Title, p.Description, p.StartTime, p.EndTime })
+                    .Select(p => new { p.Id, p.Title, p.Description, p.StartTime, p.EndTime })
                     .FirstOrDefault()
             })
             .ToListAsync();
