@@ -26,10 +26,23 @@ public class GroupsController(AppDbContext db, IOptions<ApiClientOptions> apiOpt
             return NotFound();
 
         var opts = apiOptions.Value;
+        var now = DateTime.UtcNow;
         var channels = await db.ChannelGroupItems
             .Where(c => c.ChannelGroupId == id)
             .OrderBy(c => c.SortOrder)
-            .Select(c => new { c.Id, c.ChannelName, c.StreamId, c.StreamIcon, c.EpgChannelId, c.SortOrder })
+            .Select(c => new
+            {
+                c.Id,
+                c.ChannelName,
+                c.StreamId,
+                c.StreamIcon,
+                c.EpgChannelId,
+                c.SortOrder,
+                CurrentProgram = c.Programs
+                    .Where(p => p.StartTime <= now && p.EndTime >= now)
+                    .Select(p => new { p.Title, p.Description, p.StartTime, p.EndTime })
+                    .FirstOrDefault()
+            })
             .ToListAsync();
 
         var result = channels.Select(c => new
@@ -39,7 +52,8 @@ public class GroupsController(AppDbContext db, IOptions<ApiClientOptions> apiOpt
             c.StreamId,
             c.StreamIcon,
             c.EpgChannelId,
-            StreamUrl = $"{opts.BaseUrl}/{opts.Username}/{opts.Password}/{c.StreamId}"
+            StreamUrl = $"{opts.BaseUrl}/{opts.Username}/{opts.Password}/{c.StreamId}",
+            c.CurrentProgram
         });
 
         return Ok(result);
