@@ -271,6 +271,7 @@ else
 @code {
     [Parameter] public int Id { get; set; }
 
+    private int _loadedId;
     private ChannelGroup? _group;
     private List<ChannelGroupItem> _items = [];
 
@@ -294,6 +295,17 @@ else
     protected override async Task OnInitializedAsync()
     {
         EpgQueue.OnChanged += OnEpgQueueChanged;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id == _loadedId) return;
+        _loadedId = Id;
+
+        _group = null;
+        _items = [];
+        _addedStreamIds = [];
+        _editingItem = null;
 
         _group = await Db.ChannelGroups.FindAsync(Id);
         if (_group is null)
