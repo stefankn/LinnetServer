@@ -71,6 +71,13 @@ try
 
     app.UseAntiforgery();
 
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+            Path.Combine(app.Environment.WebRootPath, "logos")),
+        RequestPath = "/logos"
+    });
+
     app.MapControllers();
 
     app.MapStaticAssets();
