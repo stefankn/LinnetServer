@@ -36,6 +36,7 @@ public class GroupsController(AppDbContext db, IOptions<ApiClientOptions> apiOpt
                 c.ChannelName,
                 c.StreamId,
                 c.StreamIcon,
+                c.CustomLogoPath,
                 c.EpgChannelId,
                 c.SortOrder,
                 CurrentProgram = c.Programs
@@ -50,7 +51,7 @@ public class GroupsController(AppDbContext db, IOptions<ApiClientOptions> apiOpt
             c.Id,
             c.ChannelName,
             c.StreamId,
-            c.StreamIcon,
+            Logo = c.CustomLogoPath ?? c.StreamIcon,
             c.EpgChannelId,
             StreamUrl = $"{opts.BaseUrl}/{opts.Username}/{opts.Password}/{c.StreamId}",
             c.CurrentProgram

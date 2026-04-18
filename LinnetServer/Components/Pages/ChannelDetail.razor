@@ -24,9 +24,9 @@ else
                     </svg>
                 </a>
                 <div class="flex items-center gap-3">
-                    @if (!string.IsNullOrEmpty(_item.StreamIcon))
+                    @if (!string.IsNullOrEmpty(_item.EffectiveLogoUrl))
                     {
-                        <img src="@_item.StreamIcon" alt="" class="h-10 w-10 object-contain rounded" />
+                        <img src="@_item.EffectiveLogoUrl" alt="" class="h-10 w-10 object-contain rounded" />
                     }
                     <div>
                         <h1 class="text-2xl font-bold">@_item.ChannelName</h1>

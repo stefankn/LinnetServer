@@ -31,6 +31,11 @@ try
         builder.Configuration.GetSection(ApiClientOptions.SectionName));
     builder.Services.AddHttpClient<ApiClient>();
 
+    builder.Services.AddHttpClient("tvlogos", client =>
+        client.DefaultRequestHeaders.Add("User-Agent", "LinnetServer"));
+    builder.Services.AddSingleton<TvLogoService>();
+    builder.Services.AddHostedService<TvLogoRefreshWorker>();
+
     builder.Services.AddSingleton<ChannelGroupsState>();
     builder.Services.AddSingleton<EpgUpdateQueue>();
     builder.Services.AddHostedService<EpgWorker>();

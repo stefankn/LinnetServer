@@ -12,6 +12,10 @@ public class ChannelGroupItem
     public string EpgChannelId { get; set; } = string.Empty;
     public int SortOrder { get; set; }
 
+    public string? CustomLogoPath { get; set; }
+
+    public string EffectiveLogoUrl => CustomLogoPath ?? StreamIcon;
+
     public DateTime? EpgLastUpdated { get; set; }
 
     public ChannelGroup ChannelGroup { get; set; } = null!;
