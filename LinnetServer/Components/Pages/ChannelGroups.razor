@@ -1,5 +1,6 @@
 @page "/groups"
 @inject AppDbContext Db
+@inject ChannelGroupsState GroupsState
 
 <PageTitle>Channel Groups — Linnet</PageTitle>
 
@@ -58,10 +59,29 @@
     </div>
 </div>
 
-<!-- Create / Edit modal -->
+<!-- Create modal -->
+<dialog class="modal @(_showCreateModal ? "modal-open" : "")">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">New Group</h3>
+        <label class="form-control w-full">
+            <div class="label">
+                <span class="label-text">Name</span>
+            </div>
+            <input type="text" class="input input-bordered w-full" placeholder="e.g. Sports, News…"
+                   @bind="_createName" @bind:event="oninput" @onkeydown="OnCreateKeyDown" />
+        </label>
+        <div class="modal-action">
+            <button class="btn btn-ghost" @onclick="CloseCreateModal">Cancel</button>
+            <button class="btn btn-primary" disabled="@string.IsNullOrWhiteSpace(_createName)" @onclick="CreateGroup">Save</button>
+        </div>
+    </div>
+    <div class="modal-backdrop" @onclick="CloseCreateModal"></div>
+</dialog>
+
+<!-- Edit modal -->
 <dialog class="modal @(_showFormModal ? "modal-open" : "")">
     <div class="modal-box">
-        <h3 class="font-bold text-lg mb-4">@(_editing is null ? "New Group" : "Edit Group")</h3>
+        <h3 class="font-bold text-lg mb-4">Edit Group</h3>
         <label class="form-control w-full">
             <div class="label">
                 <span class="label-text">Name</span>
@@ -92,6 +112,8 @@
 
 @code {
     private List<ChannelGroup> _groups = [];
+    private bool _showCreateModal;
+    private string _createName = "";
     private bool _showFormModal;
     private bool _showDeleteModal;
     private ChannelGroup? _editing;
@@ -110,9 +132,26 @@
 
     private void OpenCreate()
     {
-        _editing = null;
-        _formName = "";
-        _showFormModal = true;
+        _createName = "";
+        _showCreateModal = true;
+    }
+
+    private void CloseCreateModal() => _showCreateModal = false;
+
+    private async Task OnCreateKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_createName))
+            await CreateGroup();
+    }
+
+    private async Task CreateGroup()
+    {
+        if (string.IsNullOrWhiteSpace(_createName)) return;
+        Db.ChannelGroups.Add(new ChannelGroup { Name = _createName.Trim() });
+        await Db.SaveChangesAsync();
+        _showCreateModal = false;
+        await LoadGroups();
+        GroupsState.NotifyChanged();
     }
 
     private void OpenEdit(ChannelGroup group)
@@ -139,20 +178,12 @@
 
     private async Task SaveGroup()
     {
-        if (string.IsNullOrWhiteSpace(_formName)) return;
-
-        if (_editing is null)
-        {
-            Db.ChannelGroups.Add(new ChannelGroup { Name = _formName.Trim() });
-        }
-        else
-        {
-            _editing.Name = _formName.Trim();
-        }
-
+        if (string.IsNullOrWhiteSpace(_formName) || _editing is null) return;
+        _editing.Name = _formName.Trim();
         await Db.SaveChangesAsync();
         _showFormModal = false;
         await LoadGroups();
+        GroupsState.NotifyChanged();
     }
 
     private async Task ConfirmDelete()
@@ -162,5 +193,6 @@
         await Db.SaveChangesAsync();
         _showDeleteModal = false;
         await LoadGroups();
+        GroupsState.NotifyChanged();
     }
 }

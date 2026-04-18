@@ -24,11 +24,14 @@ try
 
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    builder.Services.AddDbContextFactory<AppDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Scoped);
 
     builder.Services.Configure<ApiClientOptions>(
         builder.Configuration.GetSection(ApiClientOptions.SectionName));
     builder.Services.AddHttpClient<ApiClient>();
 
+    builder.Services.AddSingleton<ChannelGroupsState>();
     builder.Services.AddSingleton<EpgUpdateQueue>();
     builder.Services.AddHostedService<EpgWorker>();
     builder.Services.AddSingleton<EpgRefreshWorker>();
