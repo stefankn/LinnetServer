@@ -51,7 +51,7 @@ public class GroupsController(AppDbContext db, IOptions<ApiClientOptions> apiOpt
             c.Id,
             c.ChannelName,
             c.StreamId,
-            Logo = c.CustomLogoPath ?? c.StreamIcon,
+            StreamIcon = c.CustomLogoPath ?? c.StreamIcon,
             c.EpgChannelId,
             StreamUrl = $"{opts.BaseUrl}/{opts.Username}/{opts.Password}/{c.StreamId}",
             c.CurrentProgram
