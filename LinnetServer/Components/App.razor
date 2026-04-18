@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="nord">
+<html lang="en" data-theme="night">
 
 <head>
     <meta charset="utf-8"/>
@@ -9,15 +9,6 @@
     <link rel="stylesheet" href="@Assets["app.css"]"/>
     <link rel="stylesheet" href="@Assets["LinnetServer.styles.css"]"/>
     <ImportMap/>
-    <script>
-        (function () {
-            const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            document.documentElement.setAttribute('data-theme', dark ? 'night' : 'nord');
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-                document.documentElement.setAttribute('data-theme', e.matches ? 'night' : 'nord');
-            });
-        })();
-    </script>
     <HeadOutlet/>
 </head>
 
