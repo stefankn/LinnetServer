@@ -14,14 +14,14 @@ public class LiveStreamResponse
     public int StreamId { get; set; }
 
     [JsonPropertyName("stream_icon")]
-    public string StreamIcon { get; set; } = string.Empty;
+    public string? StreamIcon { get; set; }
 
     [JsonPropertyName("category_id")]
-    public string CategoryId { get; set; } = string.Empty;
+    public string? CategoryId { get; set; }
 
     [JsonPropertyName("is_adult")]
     public int IsAdult { get; set; }
 
     [JsonPropertyName("epg_channel_id")]
-    public string EpgChannelId { get; set; } = string.Empty;
+    public string? EpgChannelId { get; set; }
 }

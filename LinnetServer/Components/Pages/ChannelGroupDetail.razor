@@ -510,10 +510,10 @@ else
             ChannelGroupId = Id,
             StreamId = stream.StreamId,
             ChannelName = stream.Name,
-            StreamIcon = stream.StreamIcon,
-            CategoryId = stream.CategoryId,
+            StreamIcon = stream.StreamIcon ?? string.Empty,
+            CategoryId = stream.CategoryId ?? string.Empty,
             IsAdult = stream.IsAdult != 0,
-            EpgChannelId = stream.EpgChannelId,
+            EpgChannelId = stream.EpgChannelId ?? string.Empty,
             SortOrder = nextOrder,
         };
 
