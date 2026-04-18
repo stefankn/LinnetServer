@@ -24,4 +24,7 @@ RUN dotnet publish "./LinnetServer.csproj" -c $BUILD_CONFIGURATION -o /app/publi
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+USER root
+RUN mkdir -p /app/wwwroot/logos && chown -R $APP_UID /app/wwwroot/logos
+USER $APP_UID
 ENTRYPOINT ["dotnet", "LinnetServer.dll"]

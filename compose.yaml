@@ -7,6 +7,8 @@
     env_file: .env
     ports:
       - "8091:8080"
+    volumes:
+      - logos_data:/app/wwwroot/logos
     depends_on:
       postgres:
         condition: service_healthy
@@ -29,4 +31,5 @@
 
 volumes:
   postgres_data:
+  logos_data:
 

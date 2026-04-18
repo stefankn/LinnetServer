@@ -31,7 +31,6 @@ project.lock.json
 ## ASP.NET / Blazor
 wwwroot/css/app.css
 LinnetServer/wwwroot/logos/
-LinnetServer/logo-index.json
 appsettings.*.json
 !appsettings.json
 !appsettings.Development.json

@@ -14,8 +14,8 @@ public partial class TvLogoService
 
     public TvLogoService(IWebHostEnvironment env, IHttpClientFactory httpClientFactory, ILogger<TvLogoService> logger)
     {
-        _indexPath = Path.Combine(env.ContentRootPath, "logo-index.json");
         _logosDir = Path.Combine(env.WebRootPath, "logos");
+        _indexPath = Path.Combine(_logosDir, "logo-index.json");
         _httpClientFactory = httpClientFactory;
         _logger = logger;
         Directory.CreateDirectory(_logosDir);
