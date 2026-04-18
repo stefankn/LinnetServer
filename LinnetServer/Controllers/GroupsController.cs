@@ -46,12 +46,13 @@ public class GroupsController(AppDbContext db, IOptions<ApiClientOptions> apiOpt
             })
             .ToListAsync();
 
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
         var result = channels.Select(c => new
         {
             c.Id,
             c.ChannelName,
             c.StreamId,
-            StreamIcon = c.CustomLogoPath ?? c.StreamIcon,
+            StreamIcon = c.CustomLogoPath is not null ? $"{baseUrl}{c.CustomLogoPath}" : c.StreamIcon,
             c.EpgChannelId,
             StreamUrl = $"{opts.BaseUrl}/{opts.Username}/{opts.Password}/{c.StreamId}",
             c.CurrentProgram
