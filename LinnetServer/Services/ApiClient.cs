@@ -58,8 +58,15 @@ public class ApiClient
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync();
-        var wrapper = JsonSerializer.Deserialize<EpgGuideApiResponse>(json)
-            ?? throw new InvalidOperationException("Failed to deserialize EPG guide response.");
-        return wrapper.EpgListings;
+        try
+        {
+            var wrapper = JsonSerializer.Deserialize<EpgGuideApiResponse>(json);
+            return wrapper?.EpgListings ?? [];
+        }
+        catch (JsonException)
+        {
+            // API returns `false` or other non-object JSON when no EPG data is available
+            return [];
+        }
     }
 }
