@@ -14,6 +14,8 @@ public class ChannelGroupItem
 
     public string? CustomLogoPath { get; set; }
 
+    public bool IsFavorite { get; set; }
+
     public string EffectiveLogoUrl => CustomLogoPath ?? StreamIcon;
 
     public DateTime? EpgLastUpdated { get; set; }

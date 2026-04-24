@@ -21,7 +21,8 @@ else
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <a href="/groups" class="btn btn-ghost btn-sm btn-square">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                 </a>
@@ -29,8 +30,10 @@ else
                     <div class="flex items-center gap-2">
                         <h1 class="text-2xl font-bold">@_group.Name</h1>
                         <button class="btn btn-ghost btn-xs btn-square" @onclick="OpenRenameModal" title="Rename group">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H7v-3a2 2 0 01.586-1.414z" />
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-50" fill="none"
+                                 viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H7v-3a2 2 0 01.586-1.414z" />
                             </svg>
                         </button>
                     </div>
@@ -44,8 +47,10 @@ else
             @if (_items.Count == 0)
             {
                 <div class="card-body items-center text-center py-12 text-base-content/40">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.89L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24"
+                         stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                              d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.89L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
                     </svg>
                     <p class="font-medium">No channels in this group</p>
                 </div>
@@ -61,6 +66,7 @@ else
                                 <th>EPG ID</th>
                                 <th class="w-16 text-center">Adult</th>
                                 <th class="w-10"></th>
+                                <th class="w-10"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -70,7 +76,8 @@ else
                                     <td class="text-base-content/40 text-sm">@item.SortOrder</td>
                                     <td>
                                         <div class="flex items-center gap-3">
-                                            <button class="relative group/logo flex-shrink-0 h-8 w-8" @onclick="() => OpenLogoPicker(item)" title="Change logo">
+                                            <button class="relative group/logo flex-shrink-0 h-8 w-8"
+                                                    @onclick="() => OpenLogoPicker(item)" title="Change logo">
                                                 @if (!string.IsNullOrEmpty(item.EffectiveLogoUrl))
                                                 {
                                                     <img src="@item.EffectiveLogoUrl" alt="" class="h-8 w-8 object-contain rounded" />
@@ -79,264 +86,294 @@ else
                                                 {
                                                     <div class="h-8 w-8 rounded bg-base-200"></div>
                                                 }
-                                                <div class="absolute inset-0 flex items-center justify-center bg-black/50 rounded opacity-0 group-hover/logo:opacity-100 transition-opacity">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                <div
+                                                    class="absolute inset-0 flex items-center justify-center bg-black/50 rounded opacity-0 group-hover/logo:opacity-100 transition-opacity">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-white"
+                                                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                     </svg>
                                                 </div>
                                             </button>
                                             @if (_editingItem == item)
                                             {
-                                                <input class="input input-bordered input-sm flex-1"
-                                                       @bind="_editingName" @bind:event="oninput"
-                                                       @onkeydown="OnChannelRenameKeyDown" />
+                                                <input class="input input-bordered input-sm flex-1" @bind="_editingName"
+                                                       @bind:event="oninput" @onkeydown="OnChannelRenameKeyDown" />
                                             }
                                             else
                                             {
-                                                <a href="/groups/@Id/channels/@item.Id" class="font-medium link link-hover">@item.ChannelName</a>
+                                                <a href="/groups/@Id/channels/@item.Id"
+                                                   class="font-medium link link-hover">@item.ChannelName</a>
                                                 @if (EpgQueue.IsInProgress(item.Id))
                                                 {
-                                                    <span class="loading loading-spinner loading-xs text-base-content/40" title="Fetching EPG guide…"></span>
+                                                    <span class="loading loading-spinner loading-xs text-base-content/40"
+                                                          title="Fetching EPG guide…"></span>
                                                 }
-                                                <button class="btn btn-ghost btn-xs btn-square opacity-0 group-hover:opacity-100" @onclick="() => StartEditChannel(item)" title="Rename channel">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H7v-3a2 2 0 01.586-1.414z" />
+                                                <button class="btn btn-ghost btn-xs btn-square opacity-0 group-hover:opacity-100"
+                                                        @onclick="() => StartEditChannel(item)" title="Rename channel">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none"
+                                                         viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                              d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H7v-3a2 2 0 01.586-1.414z" />
                                                     </svg>
                                                 </button>
                                             }
                                         </div>
                                     </td>
-                                    <td class="text-base-content/50 text-sm">@(string.IsNullOrEmpty(item.EpgChannelId) ? "—" : item.EpgChannelId)</td>
-                                    <td class="text-center">
-                                        @if (item.IsAdult)
-                                        {
-                                            <span class="badge badge-error badge-sm">18+</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (_editingItem == item)
-                                        {
-                                            <div class="flex gap-1">
-                                                <button class="btn btn-ghost btn-xs text-success" @onclick="SaveChannelRename" disabled="@(string.IsNullOrWhiteSpace(_editingName))">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    <td class="text-base-content/50 text-sm">@(string.IsNullOrEmpty(item.EpgChannelId) ? "—" :
+                                                                                                                                                    item.EpgChannelId)</td>
+                                        <td class="text-center">
+                                            @if (item.IsAdult)
+                                            {
+                                                <span class="badge badge-error badge-sm">18+</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-ghost btn-xs @(item.IsFavorite ? "text-warning" : "opacity-0 group-hover:opacity-100")"
+                                                    @onclick="() => ToggleFavorite(item)" title="@(item.IsFavorite ? "Remove from favorites" : "Add to favorites")">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="@(item.IsFavorite ? "currentColor" : "none")"
+                                                     viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                                </svg>
+                                            </button>
+                                        </td>
+                                        <td>
+                                            @if (_editingItem == item)
+                                            {
+                                                <div class="flex gap-1">
+                                                    <button class="btn btn-ghost btn-xs text-success" @onclick="SaveChannelRename"
+                                                            disabled="@(string.IsNullOrWhiteSpace(_editingName))">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                             viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                                  d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    </button>
+                                                    <button class="btn btn-ghost btn-xs" @onclick="CancelEditChannel">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                             viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                                  d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-ghost btn-xs text-error" @onclick="() => RemoveChannel(item)">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                                         stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                              d="M6 18L18 6M6 6l12 12" />
                                                     </svg>
                                                 </button>
-                                                <button class="btn btn-ghost btn-xs" @onclick="CancelEditChannel">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                                    </svg>
-                                                </button>
-                                            </div>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+
+        </div>
+    }
+
+    <!-- Rename Group modal -->
+    <dialog class="modal @(_showRenameModal ? "modal-open" : "")">
+        <div class="modal-box max-w-sm">
+            <h3 class="font-bold text-lg mb-4">Rename Group</h3>
+            <input class="input input-bordered w-full" @bind="_renameValue" @bind:event="oninput"
+                   @onkeydown="OnRenameKeyDown" placeholder="Group name" maxlength="100" />
+            @if (_renameError is not null)
+            {
+                <p class="text-error text-sm mt-2">@_renameError</p>
+            }
+            <div class="modal-action">
+                <button class="btn btn-ghost" @onclick="CloseRenameModal">Cancel</button>
+                <button class="btn btn-primary" @onclick="SaveRename"
+                        disabled="@(string.IsNullOrWhiteSpace(_renameValue))">Save</button>
+            </div>
+        </div>
+        <div class="modal-backdrop" @onclick="CloseRenameModal"></div>
+    </dialog>
+
+    <!-- Add Channels modal -->
+    <dialog class="modal @(_showAddModal ? "modal-open" : "")">
+        <div class="modal-box w-11/12 max-w-2xl">
+            <div class="flex items-center gap-2 mb-4">
+                @if (_selectedCategory is not null)
+                {
+                    <button class="btn btn-ghost btn-sm btn-square" @onclick="ClearCategory">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                             stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                }
+                <h3 class="font-bold text-lg">
+                    @if (_selectedCategory is null)
+                    {
+                        <span>Select a Category</span>
+                    }
+                    else
+                    {
+                        <span>@_selectedCategory.CategoryName</span>
+                    }
+                </h3>
+            </div>
+
+            <div class="min-h-64 max-h-[60vh] overflow-y-auto">
+                @if (_loadingCategories || _loadingStreams)
+                {
+                    <div class="flex justify-center py-12">
+                        <span class="loading loading-spinner loading-md"></span>
+                    </div>
+                }
+                else if (_categoryError is not null)
+                {
+                    <div class="alert alert-error">
+                        <span>@_categoryError</span>
+                    </div>
+                }
+                else if (_selectedCategory is null)
+                {
+                    @if (_categories.Count == 0)
+                    {
+                        <p class="text-center text-base-content/40 py-8">No categories found.</p>
+                    }
+                    else
+                    {
+                        <ul class="menu menu-sm bg-base-200 rounded-box w-full">
+                            @foreach (var cat in _categories)
+                            {
+                                <li>
+                                    <button @onclick="() => SelectCategory(cat)" class="flex justify-between">
+                                        <span>@cat.CategoryName</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-40" fill="none"
+                                             viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                </li>
+                            }
+                        </ul>
+                    }
+                }
+                else
+                {
+                    @if (_streams.Count == 0)
+                    {
+                        <p class="text-center text-base-content/40 py-8">No channels in this category.</p>
+                    }
+                    else
+                    {
+                        <ul class="menu menu-sm bg-base-200 rounded-box w-full">
+                            @foreach (var stream in _streams)
+                            {
+                                <li>
+                                    <span class="flex items-center gap-3 cursor-default">
+                                        @if (!string.IsNullOrEmpty(stream.StreamIcon))
+                                        {
+                                            <img src="@stream.StreamIcon" alt="" class="h-12 w-12 object-contain rounded flex-shrink-0" />
                                         }
                                         else
                                         {
-                                            <button class="btn btn-ghost btn-xs text-error" @onclick="() => RemoveChannel(item)">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                            </button>
+                                            <div class="h-6 w-6 rounded bg-base-300 flex-shrink-0"></div>
                                         }
-                                    </td>
-                                </tr>
+                                        <span class="flex-1 truncate">@stream.Name</span>
+                                        @if (stream.IsAdult != 0)
+                                        {
+                                            <span class="badge badge-error badge-xs flex-shrink-0">18+</span>
+                                        }
+                                        @if (_addedStreamIds.Contains(stream.StreamId))
+                                        {
+                                            <span class="btn btn-xs btn-disabled flex-shrink-0">Added</span>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-xs btn-primary flex-shrink-0"
+                                                    @onclick="() => AddChannel(stream)">Add</button>
+                                        }
+                                    </span>
+                                </li>
                             }
-                        </tbody>
-                    </table>
-                </div>
-            }
-        </div>
-
-    </div>
-}
-
-<!-- Rename Group modal -->
-<dialog class="modal @(_showRenameModal ? "modal-open" : "")">
-    <div class="modal-box max-w-sm">
-        <h3 class="font-bold text-lg mb-4">Rename Group</h3>
-        <input class="input input-bordered w-full" @bind="_renameValue" @bind:event="oninput"
-               @onkeydown="OnRenameKeyDown" placeholder="Group name" maxlength="100" />
-        @if (_renameError is not null)
-        {
-            <p class="text-error text-sm mt-2">@_renameError</p>
-        }
-        <div class="modal-action">
-            <button class="btn btn-ghost" @onclick="CloseRenameModal">Cancel</button>
-            <button class="btn btn-primary" @onclick="SaveRename" disabled="@(string.IsNullOrWhiteSpace(_renameValue))">Save</button>
-        </div>
-    </div>
-    <div class="modal-backdrop" @onclick="CloseRenameModal"></div>
-</dialog>
-
-<!-- Add Channels modal -->
-<dialog class="modal @(_showAddModal ? "modal-open" : "")">
-    <div class="modal-box w-11/12 max-w-2xl">
-        <div class="flex items-center gap-2 mb-4">
-            @if (_selectedCategory is not null)
-            {
-                <button class="btn btn-ghost btn-sm btn-square" @onclick="ClearCategory">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                    </svg>
-                </button>
-            }
-            <h3 class="font-bold text-lg">
-                @if (_selectedCategory is null)
-                {
-                    <span>Select a Category</span>
-                }
-                else
-                {
-                    <span>@_selectedCategory.CategoryName</span>
-                }
-            </h3>
-        </div>
-
-        <div class="min-h-64 max-h-[60vh] overflow-y-auto">
-            @if (_loadingCategories || _loadingStreams)
-            {
-                <div class="flex justify-center py-12">
-                    <span class="loading loading-spinner loading-md"></span>
-                </div>
-            }
-            else if (_categoryError is not null)
-            {
-                <div class="alert alert-error">
-                    <span>@_categoryError</span>
-                </div>
-            }
-            else if (_selectedCategory is null)
-            {
-                @if (_categories.Count == 0)
-                {
-                    <p class="text-center text-base-content/40 py-8">No categories found.</p>
-                }
-                else
-                {
-                    <ul class="menu menu-sm bg-base-200 rounded-box w-full">
-                        @foreach (var cat in _categories)
-                        {
-                            <li>
-                                <button @onclick="() => SelectCategory(cat)" class="flex justify-between">
-                                    <span>@cat.CategoryName</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </button>
-                            </li>
-                        }
-                    </ul>
-                }
-            }
-            else
-            {
-                @if (_streams.Count == 0)
-                {
-                    <p class="text-center text-base-content/40 py-8">No channels in this category.</p>
-                }
-                else
-                {
-                    <ul class="menu menu-sm bg-base-200 rounded-box w-full">
-                        @foreach (var stream in _streams)
-                        {
-                            <li>
-                                <span class="flex items-center gap-3 cursor-default">
-                                    @if (!string.IsNullOrEmpty(stream.StreamIcon))
-                                    {
-                                        <img src="@stream.StreamIcon" alt="" class="h-12 w-12 object-contain rounded flex-shrink-0" />
-                                    }
-                                    else
-                                    {
-                                        <div class="h-6 w-6 rounded bg-base-300 flex-shrink-0"></div>
-                                    }
-                                    <span class="flex-1 truncate">@stream.Name</span>
-                                    @if (stream.IsAdult != 0)
-                                    {
-                                        <span class="badge badge-error badge-xs flex-shrink-0">18+</span>
-                                    }
-                                    @if (_addedStreamIds.Contains(stream.StreamId))
-                                    {
-                                        <span class="btn btn-xs btn-disabled flex-shrink-0">Added</span>
-                                    }
-                                    else
-                                    {
-                                        <button class="btn btn-xs btn-primary flex-shrink-0" @onclick="() => AddChannel(stream)">Add</button>
-                                    }
-                                </span>
-                            </li>
-                        }
-                    </ul>
-                }
-            }
-        </div>
-
-        <div class="modal-action">
-            <button class="btn btn-ghost" @onclick="CloseAddModal">Close</button>
-        </div>
-    </div>
-    <div class="modal-backdrop" @onclick="CloseAddModal"></div>
-</dialog>
-
-<!-- Logo Picker modal -->
-<dialog class="modal @(_logoPickerItem is not null ? "modal-open" : "")">
-    <div class="modal-box w-11/12 max-w-2xl">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="font-bold text-lg">Choose Logo — @_logoPickerItem?.ChannelName</h3>
-            @if (_logoPickerItem?.CustomLogoPath is not null)
-            {
-                <button class="btn btn-ghost btn-sm text-error" @onclick="ClearLogo">Clear custom logo</button>
-            }
-        </div>
-
-        <input type="text" class="input input-bordered w-full mb-4" placeholder="Search logos…"
-               @bind="_logoSearch" @bind:event="oninput" />
-
-        @if (!LogoService.IsIndexLoaded)
-        {
-            <div class="flex items-center gap-2 text-base-content/50 py-8 justify-center">
-                <span class="loading loading-spinner loading-sm"></span>
-                <span>Building logo index…</span>
-            </div>
-        }
-        else if (string.IsNullOrWhiteSpace(_logoSearch))
-        {
-            <p class="text-center text-base-content/40 py-8 text-sm">Type a channel name to search</p>
-        }
-        else
-        {
-            var results = LogoService.Search(_logoSearch);
-            @if (results.Count == 0)
-            {
-                <p class="text-center text-base-content/40 py-8 text-sm">No logos found</p>
-            }
-            else
-            {
-                <div class="grid grid-cols-4 gap-3 max-h-[50vh] overflow-y-auto p-1">
-                    @foreach (var entry in results)
-                    {
-                        <button class="flex flex-col items-center gap-1.5 p-2 rounded-lg hover:bg-base-200 transition-colors @(_assigningLogo ? "pointer-events-none opacity-50" : "")"
-                                @onclick="() => AssignLogo(entry)">
-                            <img src="@entry.RawUrl" alt="@entry.Slug" class="h-12 w-full object-contain" />
-                            <span class="text-xs text-center text-base-content/60 leading-tight truncate w-full">@entry.Slug</span>
-                            <span class="badge badge-ghost badge-xs">@entry.CountryCode</span>
-                        </button>
+                        </ul>
                     }
+                }
+            </div>
+
+            <div class="modal-action">
+                <button class="btn btn-ghost" @onclick="CloseAddModal">Close</button>
+            </div>
+        </div>
+        <div class="modal-backdrop" @onclick="CloseAddModal"></div>
+    </dialog>
+
+    <!-- Logo Picker modal -->
+    <dialog class="modal @(_logoPickerItem is not null ? "modal-open" : "")">
+        <div class="modal-box w-11/12 max-w-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-lg">Choose Logo — @_logoPickerItem?.ChannelName</h3>
+                @if (_logoPickerItem?.CustomLogoPath is not null)
+                {
+                    <button class="btn btn-ghost btn-sm text-error" @onclick="ClearLogo">Clear custom logo</button>
+                }
+            </div>
+
+            <input type="text" class="input input-bordered w-full mb-4" placeholder="Search logos…" @bind="_logoSearch"
+                   @bind:event="oninput" />
+
+            @if (!LogoService.IsIndexLoaded)
+            {
+                <div class="flex items-center gap-2 text-base-content/50 py-8 justify-center">
+                    <span class="loading loading-spinner loading-sm"></span>
+                    <span>Building logo index…</span>
                 </div>
             }
-        }
-
-        <div class="modal-action">
-            @if (_assigningLogo)
+            else if (string.IsNullOrWhiteSpace(_logoSearch))
             {
-                <button class="btn btn-sm" disabled>
-                    <span class="loading loading-spinner loading-xs"></span>
-                    Downloading…
-                </button>
+                <p class="text-center text-base-content/40 py-8 text-sm">Type a channel name to search</p>
             }
-            <button class="btn btn-ghost" @onclick="CloseLogoPicker">Close</button>
+            else
+            {
+                var results = LogoService.Search(_logoSearch);
+                @if (results.Count == 0)
+                {
+                    <p class="text-center text-base-content/40 py-8 text-sm">No logos found</p>
+                }
+                else
+                {
+                    <div class="grid grid-cols-4 gap-3 max-h-[50vh] overflow-y-auto p-1">
+                        @foreach (var entry in results)
+                        {
+                            <button
+                                class="flex flex-col items-center gap-1.5 p-2 rounded-lg hover:bg-base-200 transition-colors @(_assigningLogo ? "pointer-events-none opacity-50" : "")"
+                                @onclick="() => AssignLogo(entry)">
+                                <img src="@entry.RawUrl" alt="@entry.Slug" class="h-12 w-full object-contain" />
+                                <span class="text-xs text-center text-base-content/60 leading-tight truncate w-full">@entry.Slug</span>
+                                <span class="badge badge-ghost badge-xs">@entry.CountryCode</span>
+                            </button>
+                        }
+                    </div>
+                }
+            }
+
+            <div class="modal-action">
+                @if (_assigningLogo)
+                {
+                    <button class="btn btn-sm" disabled>
+                        <span class="loading loading-spinner loading-xs"></span>
+                        Downloading…
+                    </button>
+                }
+                <button class="btn btn-ghost" @onclick="CloseLogoPicker">Close</button>
+            </div>
         </div>
-    </div>
-    <div class="modal-backdrop" @onclick="CloseLogoPicker"></div>
-</dialog>
+        <div class="modal-backdrop" @onclick="CloseLogoPicker"></div>
+    </dialog>
 
 @code {
     [Parameter] public int Id { get; set; }
@@ -544,6 +581,12 @@ else
 
         _items.Remove(item);
         _addedStreamIds.Remove(item.StreamId);
+    }
+
+    private async Task ToggleFavorite(ChannelGroupItem item)
+    {
+        item.IsFavorite = !item.IsFavorite;
+        await Db.SaveChangesAsync();
     }
 
     private void CloseAddModal() => _showAddModal = false;

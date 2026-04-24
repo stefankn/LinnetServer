@@ -1,13 +1,70 @@
 using LinnetServer.Data;
+using LinnetServer.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace LinnetServer.Controllers;
 
 [ApiController]
 [Route("api/v1/channels")]
-public class ChannelsController(AppDbContext db) : ControllerBase
+public class ChannelsController(AppDbContext db, IOptions<ApiClientOptions> apiOptions) : ControllerBase
 {
+    /// <remarks>Returns all favorite channels.</remarks>
+    [HttpGet("favorites")]
+    public async Task<IActionResult> GetFavorites()
+    {
+        var opts = apiOptions.Value;
+        var now = DateTime.UtcNow;
+        var channels = await db.ChannelGroupItems
+            .Where(c => c.IsFavorite)
+            .OrderBy(c => c.ChannelName)
+            .Select(c => new
+            {
+                c.Id,
+                c.ChannelName,
+                c.StreamId,
+                c.StreamIcon,
+                c.CustomLogoPath,
+                c.EpgChannelId,
+                c.ChannelGroupId,
+                CurrentProgram = c.Programs
+                    .Where(p => p.StartTime <= now && p.EndTime >= now)
+                    .Select(p => new { p.Id, p.Title, p.Description, p.StartTime, p.EndTime })
+                    .FirstOrDefault()
+            })
+            .ToListAsync();
+
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+        var result = channels.Select(c => new
+        {
+            c.Id,
+            c.ChannelName,
+            c.StreamId,
+            StreamIcon = c.CustomLogoPath is not null ? $"{baseUrl}{c.CustomLogoPath}" : c.StreamIcon,
+            c.EpgChannelId,
+            c.ChannelGroupId,
+            StreamUrl = $"{opts.BaseUrl}/{opts.Username}/{opts.Password}/{c.StreamId}",
+            c.CurrentProgram
+        });
+
+        return Ok(result);
+    }
+
+
+    /// <remarks>Sets the favorite status of a channel.</remarks>
+    [HttpPut("{id}/favorite")]
+    public async Task<IActionResult> SetFavorite(int id, [FromBody] bool isFavorite)
+    {
+        var channel = await db.ChannelGroupItems.FindAsync(id);
+        if (channel is null)
+            return NotFound();
+
+        channel.IsFavorite = isFavorite;
+        await db.SaveChangesAsync();
+        return NoContent();
+    }
+
     /// <remarks>Returns the EPG guide for a channel for today and the next 2 days.</remarks>
     [HttpGet("{id}/guide")]
     public async Task<IActionResult> GetPrograms(int id)

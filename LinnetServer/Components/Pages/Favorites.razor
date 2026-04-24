@@ -1,0 +1,119 @@
+@page "/favorites"
+@inject IDbContextFactory<AppDbContext> DbFactory
+
+<PageTitle>Favorites — Linnet</PageTitle>
+
+<div class="max-w-4xl space-y-6">
+
+    <div>
+        <h1 class="text-2xl font-bold">Favorites</h1>
+        <p class="text-base-content/50 text-sm mt-1">@_items.Count favorite channel@(_items.Count == 1 ? "" : "s")</p>
+    </div>
+
+    <div class="card bg-base-100 shadow">
+        @if (_loading)
+        {
+            <div class="flex justify-center py-20">
+                <span class="loading loading-spinner loading-lg"></span>
+            </div>
+        }
+        else if (_items.Count == 0)
+        {
+            <div class="card-body items-center text-center py-12 text-base-content/40">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+                <p class="font-medium">No favorite channels yet</p>
+                <p class="text-sm mt-1">Star a channel from any group to add it here</p>
+            </div>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="table table-zebra">
+                    <thead>
+                        <tr>
+                            <th>Channel</th>
+                            <th>Group</th>
+                            <th>EPG ID</th>
+                            <th class="w-16 text-center">Adult</th>
+                            <th class="w-10"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _items)
+                        {
+                            <tr class="group">
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        @if (!string.IsNullOrEmpty(item.EffectiveLogoUrl))
+                                        {
+                                            <img src="@item.EffectiveLogoUrl" alt="" class="h-8 w-8 object-contain rounded flex-shrink-0" />
+                                        }
+                                        else
+                                        {
+                                            <div class="h-8 w-8 rounded bg-base-200 flex-shrink-0"></div>
+                                        }
+                                        <a href="/groups/@item.ChannelGroupId/channels/@item.Id"
+                                           class="font-medium link link-hover">@item.ChannelName</a>
+                                    </div>
+                                </td>
+                                <td>
+                                    <a href="/groups/@item.ChannelGroupId" class="link link-hover text-base-content/60 text-sm">
+                                        @item.ChannelGroup.Name
+                                    </a>
+                                </td>
+                                <td class="text-base-content/50 text-sm">
+                                    @(string.IsNullOrEmpty(item.EpgChannelId) ? "—" : item.EpgChannelId)
+                                </td>
+                                <td class="text-center">
+                                    @if (item.IsAdult)
+                                    {
+                                        <span class="badge badge-error badge-sm">18+</span>
+                                    }
+                                </td>
+                                <td>
+                                    <button class="btn btn-ghost btn-xs text-warning opacity-0 group-hover:opacity-100"
+                                            @onclick="() => Unfavorite(item)" title="Remove from favorites">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor"
+                                             viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+</div>
+
+@code {
+    private List<ChannelGroupItem> _items = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        _items = await db.ChannelGroupItems
+            .Where(i => i.IsFavorite)
+            .Include(i => i.ChannelGroup)
+            .OrderBy(i => i.ChannelName)
+            .ToListAsync();
+        _loading = false;
+    }
+
+    private async Task Unfavorite(ChannelGroupItem item)
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        await db.ChannelGroupItems
+            .Where(i => i.Id == item.Id)
+            .ExecuteUpdateAsync(s => s.SetProperty(i => i.IsFavorite, false));
+        _items.Remove(item);
+    }
+}
