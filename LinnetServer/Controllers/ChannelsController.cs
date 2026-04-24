@@ -28,6 +28,7 @@ public class ChannelsController(AppDbContext db, IOptions<ApiClientOptions> apiO
                 c.CustomLogoPath,
                 c.EpgChannelId,
                 c.ChannelGroupId,
+                c.IsFavorite,
                 CurrentProgram = c.Programs
                     .Where(p => p.StartTime <= now && p.EndTime >= now)
                     .Select(p => new { p.Id, p.Title, p.Description, p.StartTime, p.EndTime })
@@ -44,6 +45,7 @@ public class ChannelsController(AppDbContext db, IOptions<ApiClientOptions> apiO
             StreamIcon = c.CustomLogoPath is not null ? $"{baseUrl}{c.CustomLogoPath}" : c.StreamIcon,
             c.EpgChannelId,
             c.ChannelGroupId,
+            c.IsFavorite,
             StreamUrl = $"{opts.BaseUrl}/{opts.Username}/{opts.Password}/{c.StreamId}",
             c.CurrentProgram
         });

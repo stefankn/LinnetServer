@@ -39,6 +39,7 @@ public class GroupsController(AppDbContext db, IOptions<ApiClientOptions> apiOpt
                 c.CustomLogoPath,
                 c.EpgChannelId,
                 c.SortOrder,
+                c.IsFavorite,
                 CurrentProgram = c.Programs
                     .Where(p => p.StartTime <= now && p.EndTime >= now)
                     .Select(p => new { p.Id, p.Title, p.Description, p.StartTime, p.EndTime })
@@ -54,6 +55,7 @@ public class GroupsController(AppDbContext db, IOptions<ApiClientOptions> apiOpt
             c.StreamId,
             StreamIcon = c.CustomLogoPath is not null ? $"{baseUrl}{c.CustomLogoPath}" : c.StreamIcon,
             c.EpgChannelId,
+            c.IsFavorite,
             StreamUrl = $"{opts.BaseUrl}/{opts.Username}/{opts.Password}/{c.StreamId}",
             c.CurrentProgram
         });
