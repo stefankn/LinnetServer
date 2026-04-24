@@ -56,16 +56,18 @@ public class ChannelsController(AppDbContext db, IOptions<ApiClientOptions> apiO
 
     /// <remarks>Sets the favorite status of a channel.</remarks>
     [HttpPut("{id}/favorite")]
-    public async Task<IActionResult> SetFavorite(int id, [FromBody] bool isFavorite)
+    public async Task<IActionResult> SetFavorite(int id, [FromBody] SetFavoriteRequest request)
     {
         var channel = await db.ChannelGroupItems.FindAsync(id);
         if (channel is null)
             return NotFound();
 
-        channel.IsFavorite = isFavorite;
+        channel.IsFavorite = request.IsFavorite;
         await db.SaveChangesAsync();
         return NoContent();
     }
+
+    public record SetFavoriteRequest(bool IsFavorite);
 
     /// <remarks>Returns the EPG guide for a channel for today and the next 2 days.</remarks>
     [HttpGet("{id}/guide")]
