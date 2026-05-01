@@ -1,0 +1,129 @@
+@page "/movies"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject ApiClient Api
+
+<PageTitle>Movies — Linnet</PageTitle>
+
+<div class="max-w-4xl space-y-6">
+
+    <div>
+        <h1 class="text-2xl font-bold">Movies</h1>
+        <p class="text-base-content/50 text-sm mt-1">
+            @if (!_loading)
+            {
+                var filtered = Filtered;
+                @(string.IsNullOrWhiteSpace(_search)
+                    ? $"{_categories.Count} categor{(_categories.Count == 1 ? "y" : "ies")}"
+                    : $"{filtered.Count} of {_categories.Count} categor{(_categories.Count == 1 ? "y" : "ies")}")
+            }
+        </p>
+    </div>
+
+    @if (!_loading && _error is null && _categories.Count > 0)
+    {
+        <input type="search" class="input input-bordered w-full" placeholder="Search categories…"
+               @bind="_search" @bind:event="oninput" />
+    }
+
+    <div class="card bg-base-100 shadow">
+        @if (_loading)
+        {
+            <div class="flex justify-center py-20">
+                <span class="loading loading-spinner loading-lg"></span>
+            </div>
+        }
+        else if (_error is not null)
+        {
+            <div class="card-body">
+                <div class="alert alert-error">
+                    <span>@_error</span>
+                </div>
+            </div>
+        }
+        else if (_categories.Count == 0)
+        {
+            <div class="card-body items-center text-center py-12 text-base-content/40">
+                <p class="font-medium">No Movies categories found</p>
+            </div>
+        }
+        else
+        {
+            var filtered = Filtered;
+            @if (filtered.Count == 0)
+            {
+                <div class="card-body items-center text-center py-12 text-base-content/40">
+                    <p class="font-medium">No categories match "@_search"</p>
+                </div>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>ID</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var category in filtered)
+                            {
+                                <tr>
+                                    <td class="font-medium">
+                                        <a href="/movies/@category.CategoryId?name=@Uri.EscapeDataString(category.CategoryName)" class="link link-hover">@category.CategoryName</a>
+                                    </td>
+                                    <td class="text-base-content/50 text-sm">@category.CategoryId</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        }
+    </div>
+
+</div>
+
+@code {
+    private List<VodCategoryResponse> _categories = [];
+    private bool _loading = true;
+    private string? _error;
+    private string _search = string.Empty;
+
+    private List<VodCategoryResponse> Filtered =>
+        string.IsNullOrWhiteSpace(_search)
+            ? _categories
+            : _categories.Where(c => FuzzyMatch(c.CategoryName, _search)).ToList();
+
+    private static bool FuzzyMatch(string text, string query)
+    {
+        var t = text.AsSpan();
+        var q = query.AsSpan().Trim();
+        int ti = 0;
+        for (int qi = 0; qi < q.Length; qi++)
+        {
+            var ch = char.ToLowerInvariant(q[qi]);
+            while (ti < t.Length && char.ToLowerInvariant(t[ti]) != ch)
+                ti++;
+            if (ti >= t.Length) return false;
+            ti++;
+        }
+        return true;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _categories = await Api.GetVodCategoriesAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load Movies categories: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

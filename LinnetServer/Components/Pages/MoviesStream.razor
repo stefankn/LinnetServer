@@ -1,0 +1,162 @@
+@page "/movies/{CategoryId}/{StreamId:int}"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject ApiClient Api
+@inject VodCoverService Covers
+
+<PageTitle>@(StripPrefix(_info?.Info?.Name) is { Length: > 0 } n ? n : $"Stream #{StreamId}") — Linnet</PageTitle>
+
+<div class="max-w-5xl space-y-6">
+
+    <div class="flex items-center gap-3">
+        <a href="/movies/@CategoryId" class="btn btn-ghost btn-sm btn-square">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+        </a>
+        <h1 class="text-2xl font-bold">@(StripPrefix(_info?.Info?.Name) is { Length: > 0 } n ? n : $"Stream #{StreamId}")</h1>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="flex justify-center py-20">
+            <span class="loading loading-spinner loading-lg"></span>
+        </div>
+    }
+    else if (_error is not null)
+    {
+        <div class="alert alert-error">
+            <span>@_error</span>
+        </div>
+    }
+    else if (_info is not null)
+    {
+        var info = _info.Info;
+        var movie = _info.MovieData;
+
+        <div class="flex gap-8 items-start">
+
+            <!-- Cover -->
+            <div class="w-48 shrink-0">
+                <div class="relative aspect-[2/3] rounded-lg overflow-hidden bg-base-300">
+                    @if (!string.IsNullOrEmpty(_coverUrl))
+                    {
+                        @if (!_coverLoaded)
+                        {
+                            <div class="skeleton absolute inset-0"></div>
+                        }
+                        <img src="@_coverUrl" alt="@info?.Name"
+                             class="absolute inset-0 w-full h-full object-cover"
+                             @onload="() => { _coverLoaded = true; StateHasChanged(); }" />
+                    }
+                    else
+                    {
+                        <div class="absolute inset-0 flex items-center justify-center text-base-content/30 text-xs">No coverart</div>
+                    }
+                </div>
+            </div>
+
+            <!-- Details -->
+            <div class="flex-1 space-y-4">
+
+                @if (!string.IsNullOrWhiteSpace(info?.OriginalName) && info.OriginalName != info?.Name)
+                {
+                    <p class="text-base-content/50 text-sm italic">@info!.OriginalName</p>
+                }
+
+                <div class="flex flex-wrap gap-2">
+                    @if (!string.IsNullOrWhiteSpace(info?.Genre))
+                    {
+                        <span class="badge badge-outline">@info.Genre</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(info?.Country))
+                    {
+                        <span class="badge badge-outline">@info.Country</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(movie?.ContainerExtension))
+                    {
+                        <span class="badge badge-ghost">@movie.ContainerExtension</span>
+                    }
+                </div>
+
+                <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-base-content/60">
+                    @if (!string.IsNullOrWhiteSpace(info?.ReleaseDate))
+                    {
+                        <span>Released: @info.ReleaseDate</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(info?.Duration))
+                    {
+                        <span>Duration: @info.Duration</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(info?.Rating) && info.Rating != "0")
+                    {
+                        <span>Rating: @info.Rating</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(info?.MpaaRating))
+                    {
+                        <span>MPAA: @info.MpaaRating</span>
+                    }
+                </div>
+
+                <p class="text-sm leading-relaxed">
+                    @if (!string.IsNullOrWhiteSpace(info?.Plot))
+                    {
+                        @info.Plot
+                    }
+                    else
+                    {
+                        <span class="text-base-content/40 italic">No description available</span>
+                    }
+                </p>
+
+                <div class="space-y-1 text-sm">
+                    @if (!string.IsNullOrWhiteSpace(info?.Director))
+                    {
+                        <div><span class="text-base-content/50">Director: </span>@info.Director</div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(info?.Cast))
+                    {
+                        <div><span class="text-base-content/50">Cast: </span>@info.Cast</div>
+                    }
+                </div>
+
+            </div>
+        </div>
+
+    }
+
+</div>
+
+@code {
+    [Parameter] public string CategoryId { get; set; } = string.Empty;
+    [Parameter] public int StreamId { get; set; }
+
+    private static string StripPrefix(string? name)
+    {
+        if (string.IsNullOrEmpty(name)) return string.Empty;
+        return System.Text.RegularExpressions.Regex.Replace(name, @"^\u2503[^\u2503]*\u2503\s*", "").Trim();
+    }
+
+    private VodInfoResponse? _info;
+    private string _coverUrl = string.Empty;
+    private bool _coverLoaded;
+    private bool _loading = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _info = await Api.GetVodInfoAsync(StreamId);
+            var remoteUrl = _info.Info?.CoverBig ?? _info.Info?.MovieImage;
+            _coverUrl = Covers.GetCoverUrl(CategoryId, StreamId, remoteUrl);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load stream info: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

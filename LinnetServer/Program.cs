@@ -36,6 +36,10 @@ try
     builder.Services.AddSingleton<TvLogoService>();
     builder.Services.AddHostedService<TvLogoRefreshWorker>();
 
+    builder.Services.AddHttpClient("vod-covers");
+    builder.Services.AddSingleton<VodCoverService>();
+    builder.Services.AddHttpClient("vod-download");
+
     builder.Services.AddSingleton<ChannelGroupsState>();
     builder.Services.AddSingleton<EpgUpdateQueue>();
     builder.Services.AddHostedService<EpgWorker>();
@@ -76,6 +80,14 @@ try
         FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
             Path.Combine(app.Environment.WebRootPath, "logos")),
         RequestPath = "/logos"
+    });
+
+    var vodCoversPath = Path.Combine(app.Environment.WebRootPath, "vod-covers");
+    Directory.CreateDirectory(vodCoversPath);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(vodCoversPath),
+        RequestPath = "/vod-covers"
     });
 
     app.MapControllers();

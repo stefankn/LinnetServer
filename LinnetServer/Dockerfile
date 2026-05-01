@@ -25,6 +25,6 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 USER root
-RUN mkdir -p /app/wwwroot/logos && chown -R $APP_UID /app/wwwroot/logos
+RUN mkdir -p /app/wwwroot/logos /app/wwwroot/vod-covers && chown -R $APP_UID /app/wwwroot/logos /app/wwwroot/vod-covers
 USER $APP_UID
 ENTRYPOINT ["dotnet", "LinnetServer.dll"]

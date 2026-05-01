@@ -1,0 +1,330 @@
+@page "/movies/{CategoryId}"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject ApiClient Api
+@inject VodCoverService Covers
+@inject IOptions<ApiClientOptions> ApiOptions
+@using Microsoft.Extensions.Options
+
+<PageTitle>@_categoryName — Linnet</PageTitle>
+
+<div class="space-y-6">
+
+    <div class="flex items-center gap-3">
+        <a href="/movies" class="btn btn-ghost btn-sm btn-square">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold">@_categoryName</h1>
+            @if (!_loading)
+            {
+                <p class="text-base-content/50 text-sm mt-0.5">@_streams.Count stream@(_streams.Count == 1 ? "" : "s")</p>
+            }
+        </div>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="flex justify-center py-20">
+            <span class="loading loading-spinner loading-lg"></span>
+        </div>
+    }
+    else if (_error is not null)
+    {
+        <div class="alert alert-error">
+            <span>@_error</span>
+        </div>
+    }
+    else if (_streams.Count == 0)
+    {
+        <div class="card bg-base-100 shadow">
+            <div class="card-body items-center text-center py-12 text-base-content/40">
+                <p class="font-medium">No streams in this category</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            @foreach (var stream in _streams)
+            {
+                <button @onclick="() => OpenStream(stream)" class="flex flex-col gap-2 text-left cursor-pointer">
+                    <div class="relative aspect-[2/3] rounded-lg overflow-hidden bg-base-300">
+                        @{ var coverUrl = Covers.GetCoverUrl(CategoryId, stream.StreamId, stream.StreamIcon); }
+                        @if (!string.IsNullOrEmpty(coverUrl))
+                        {
+                            @if (!_loadedImages.Contains(stream.StreamId))
+                            {
+                                <div class="skeleton absolute inset-0"></div>
+                            }
+                            <img src="@coverUrl"
+                                 alt="@stream.Name"
+                                 class="absolute inset-0 w-full h-full object-cover"
+                                 @onload="() => { _loadedImages.Add(stream.StreamId); StateHasChanged(); }" />
+                        }
+                        else
+                        {
+                            <div class="absolute inset-0 flex items-center justify-center text-base-content/30 text-xs">No coverart</div>
+                        }
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm font-medium leading-tight line-clamp-2">@StripPrefix(stream.Name)</p>
+                    </div>
+                </button>
+            }
+        </div>
+    }
+
+</div>
+
+<!-- Stream detail modal -->
+<dialog class="modal @(_selectedStream is not null ? "modal-open" : "")">
+    <div class="modal-box w-11/12 max-w-3xl">
+        @if (_modalLoading)
+        {
+            <div class="flex justify-center py-16">
+                <span class="loading loading-spinner loading-lg"></span>
+            </div>
+        }
+        else if (_modalError is not null)
+        {
+            <div class="alert alert-error mb-4">
+                <span>@_modalError</span>
+            </div>
+        }
+        else if (_vodInfo is not null)
+        {
+            var info = _vodInfo.Info;
+            var movie = _vodInfo.MovieData;
+
+            <div class="flex gap-6 items-start">
+
+                <!-- Cover -->
+                <div class="w-36 shrink-0">
+                    <div class="relative aspect-[2/3] rounded-lg overflow-hidden bg-base-300">
+                        @if (!string.IsNullOrEmpty(_modalCoverUrl))
+                        {
+                            @if (!_modalCoverLoaded)
+                            {
+                                <div class="skeleton absolute inset-0"></div>
+                            }
+                            <img src="@_modalCoverUrl" alt="@info?.Name"
+                                 class="absolute inset-0 w-full h-full object-cover"
+                                 @onload="() => { _modalCoverLoaded = true; StateHasChanged(); }" />
+                        }
+                        else
+                        {
+                            <div class="absolute inset-0 flex items-center justify-center text-base-content/30 text-xs">No coverart</div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Details -->
+                <div class="flex-1 space-y-3 min-w-0">
+
+                    <h3 class="font-bold text-lg leading-tight">@StripPrefix(info?.Name ?? _selectedStream?.Name)</h3>
+
+                    @if (!string.IsNullOrWhiteSpace(info?.OriginalName) && info.OriginalName != info?.Name)
+                    {
+                        <p class="text-base-content/50 text-sm italic">@info!.OriginalName</p>
+                    }
+
+                    <div class="flex flex-wrap gap-2">
+                        @if (!string.IsNullOrWhiteSpace(info?.Genre))
+                        {
+                            <span class="badge badge-outline">@info.Genre</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(info?.Country))
+                        {
+                            <span class="badge badge-outline">@info.Country</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(movie?.ContainerExtension))
+                        {
+                            <span class="badge badge-ghost">@movie.ContainerExtension</span>
+                        }
+                    </div>
+
+                    <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-base-content/60">
+                        @if (!string.IsNullOrWhiteSpace(info?.ReleaseDate))
+                        {
+                            <span>Released: @info.ReleaseDate</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(info?.Duration))
+                        {
+                            <span>Duration: @info.Duration</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(info?.Rating) && info.Rating != "0")
+                        {
+                            <span>Rating: @info.Rating</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(info?.MpaaRating))
+                        {
+                            <span>MPAA: @info.MpaaRating</span>
+                        }
+                    </div>
+
+                    <p class="text-sm leading-relaxed">
+                        @if (!string.IsNullOrWhiteSpace(info?.Plot))
+                        {
+                            @info.Plot
+                        }
+                        else
+                        {
+                            <span class="text-base-content/40 italic">No description available</span>
+                        }
+                    </p>
+
+                    <div class="space-y-1 text-sm">
+                        @if (!string.IsNullOrWhiteSpace(info?.Director))
+                        {
+                            <div><span class="text-base-content/50">Director: </span>@info.Director</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(info?.Cast))
+                        {
+                            <div><span class="text-base-content/50">Cast: </span>@info.Cast</div>
+                        }
+                    </div>
+
+                </div>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(_modalStreamUrl))
+        {
+            <div class="mt-4 flex items-center gap-2">
+                <input type="text" class="input input-bordered input-sm flex-1 font-mono text-xs" value="@_modalStreamUrl" readonly />
+                <button class="btn btn-sm btn-ghost" title="Copy to clipboard"
+                        @onclick="() => CopyToClipboard(_modalStreamUrl)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    @(_copied ? "Copied!" : "Copy")
+                </button>
+            </div>
+        }
+
+        <div class="modal-action">
+            @if (!string.IsNullOrEmpty(_modalDownloadUrl))
+            {
+                <a href="@_modalDownloadUrl" class="btn btn-primary" download>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download
+                </a>
+            }
+            <button class="btn btn-ghost" @onclick="CloseModal">Close</button>
+        </div>
+    </div>
+    <div class="modal-backdrop" @onclick="CloseModal"></div>
+</dialog>
+
+@code {
+    [Parameter] public string CategoryId { get; set; } = string.Empty;
+    [SupplyParameterFromQuery(Name = "name")] public string? CategoryName { get; set; }
+
+    private string _categoryName = string.Empty;
+    private List<VodStreamResponse> _streams = [];
+    private HashSet<int> _loadedImages = [];
+    private bool _loading = true;
+    private string? _error;
+
+    private VodStreamResponse? _selectedStream;
+    private VodInfoResponse? _vodInfo;
+    private string _modalCoverUrl = string.Empty;
+    private string _modalStreamUrl = string.Empty;
+    private string _modalDownloadUrl = string.Empty;
+    private bool _modalCoverLoaded;
+    private bool _modalLoading;
+    private bool _copied;
+    private string? _modalError;
+
+    private static string BuildDownloadUrl(VodStreamResponse stream)
+    {
+        if (string.IsNullOrEmpty(stream.StreamType) || string.IsNullOrEmpty(stream.ContainerExtension))
+            return string.Empty;
+
+        return $"/api/v1/vod/download/{stream.StreamType}/{stream.StreamId}.{stream.ContainerExtension}";
+    }
+
+    private static string StripPrefix(string? name)
+    {
+        if (string.IsNullOrEmpty(name)) return string.Empty;
+        return System.Text.RegularExpressions.Regex.Replace(name, @"^\u2503[^\u2503]*\u2503\s*", "").Trim();
+    }
+
+    protected override void OnParametersSet()
+    {
+        _categoryName = !string.IsNullOrWhiteSpace(CategoryName) ? CategoryName : CategoryId;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _streams = await Api.GetVodStreamsAsync(CategoryId);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load streams: {ex.Message}";
+            return;
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            await Covers.CacheAllAsync(CategoryId, _streams);
+            await InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private async Task OpenStream(VodStreamResponse stream)
+    {
+        _selectedStream = stream;
+        _vodInfo = null;
+        _modalCoverUrl = string.Empty;
+        _modalStreamUrl = string.Empty;
+        _modalDownloadUrl = string.Empty;
+        _modalCoverLoaded = false;
+        _modalError = null;
+        _modalLoading = true;
+
+        try
+        {
+            _vodInfo = await Api.GetVodInfoAsync(stream.StreamId);
+            var remoteUrl = _vodInfo.Info?.CoverBig ?? _vodInfo.Info?.MovieImage;
+            _modalCoverUrl = Covers.GetCoverUrl(CategoryId, stream.StreamId, remoteUrl);
+            _modalStreamUrl = ApiOptions.Value.BuildStreamUrl(stream.StreamType, stream.StreamId, stream.ContainerExtension ?? string.Empty);
+            _modalDownloadUrl = BuildDownloadUrl(stream);
+        }
+        catch (Exception ex)
+        {
+            _modalError = $"Failed to load stream info: {ex.Message}";
+        }
+        finally
+        {
+            _modalLoading = false;
+        }
+    }
+
+    private void CloseModal()
+    {
+        _selectedStream = null;
+        _vodInfo = null;
+        _copied = false;
+    }
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    private async Task CopyToClipboard(string text)
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        _copied = true;
+        await Task.Delay(2000);
+        _copied = false;
+    }
+}

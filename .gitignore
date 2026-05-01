@@ -31,6 +31,7 @@ project.lock.json
 ## ASP.NET / Blazor
 wwwroot/css/app.css
 LinnetServer/wwwroot/logos/
+LinnetServer/wwwroot/vod-covers/
 appsettings.*.json
 !appsettings.json
 !appsettings.Development.json
