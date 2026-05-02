@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Net;
 
 namespace LinnetServer.Services;
 
@@ -53,13 +52,9 @@ public class VodCoverService
             var bytes = await http.GetByteArrayAsync(remoteUrl);
             await File.WriteAllBytesAsync(localPath, bytes);
         }
-        catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Forbidden)
+        catch (Exception)
         {
             _failed.TryAdd(key, true);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to cache VOD cover for stream {StreamId}", streamId);
         }
         finally
         {

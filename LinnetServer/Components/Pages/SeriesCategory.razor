@@ -1,0 +1,344 @@
+@page "/series/{CategoryId}"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject ApiClient Api
+@inject VodCoverService Covers
+@inject IOptions<ApiClientOptions> ApiOptions
+@using Microsoft.Extensions.Options
+
+<PageTitle>@_categoryName — Linnet</PageTitle>
+
+<div class="space-y-6">
+
+    <div class="flex items-center gap-3">
+        <a href="/series" class="btn btn-ghost btn-sm btn-square">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold">@_categoryName</h1>
+            @if (!_loading)
+            {
+                var filtered = Filtered;
+                <p class="text-base-content/50 text-sm mt-0.5">
+                    @(string.IsNullOrWhiteSpace(_search)
+                        ? $"{_series.Count} series"
+                        : $"{filtered.Count} of {_series.Count} series")
+                </p>
+            }
+        </div>
+    </div>
+
+    @if (!_loading && _error is null && _series.Count > 0)
+    {
+        <input type="search" class="input input-bordered w-full" placeholder="Search series…"
+               @bind="_search" @bind:event="oninput" />
+    }
+
+    @if (_loading)
+    {
+        <div class="flex justify-center py-20">
+            <span class="loading loading-spinner loading-lg"></span>
+        </div>
+    }
+    else if (_error is not null)
+    {
+        <div class="alert alert-error">
+            <span>@_error</span>
+        </div>
+    }
+    else if (_series.Count == 0)
+    {
+        <div class="card bg-base-100 shadow">
+            <div class="card-body items-center text-center py-12 text-base-content/40">
+                <p class="font-medium">No series in this category</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        var filtered = Filtered;
+        @if (filtered.Count == 0)
+        {
+            <p class="text-center text-base-content/40 py-12">No series match "@_search"</p>
+        }
+        else
+        {
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                @foreach (var series in filtered)
+                {
+                    <button @onclick="() => OpenSeries(series)" class="flex flex-col gap-2 text-left cursor-pointer">
+                        <div class="relative aspect-[2/3] rounded-lg overflow-hidden bg-base-300">
+                            @{ var coverUrl = Covers.GetCoverUrl(CategoryId, series.SeriesId ?? 0, series.Cover); }
+                            @if (!string.IsNullOrEmpty(coverUrl))
+                            {
+                                @if (!_loadedImages.Contains(series.SeriesId ?? 0))
+                                {
+                                    <div class="skeleton absolute inset-0"></div>
+                                }
+                                <img src="@coverUrl"
+                                     alt="@series.Name"
+                                     class="absolute inset-0 w-full h-full object-cover"
+                                     @onload="() => { _loadedImages.Add(series.SeriesId ?? 0); StateHasChanged(); }" />
+                            }
+                            else
+                            {
+                                <div class="absolute inset-0 flex items-center justify-center text-base-content/30 text-xs">No coverart</div>
+                            }
+                        </div>
+                        <div class="text-center">
+                            <p class="text-sm font-medium leading-tight line-clamp-2">@StripPrefix(series.Name)</p>
+                        </div>
+                    </button>
+                }
+            </div>
+        }
+    }
+
+</div>
+
+<!-- Series detail modal -->
+<dialog class="modal @(_selectedSeries is not null ? "modal-open" : "")">
+    <div class="modal-box w-11/12 max-w-3xl">
+        @if (_modalLoading)
+        {
+            <div class="flex justify-center py-16">
+                <span class="loading loading-spinner loading-lg"></span>
+            </div>
+        }
+        else if (_modalError is not null)
+        {
+            <div class="alert alert-error mb-4">
+                <span>@_modalError</span>
+            </div>
+        }
+        else if (_seriesInfo is not null)
+        {
+            var info = _seriesInfo.Info;
+
+            <div class="flex gap-6 items-start">
+
+                <!-- Cover -->
+                <div class="w-36 shrink-0">
+                    <div class="relative aspect-[2/3] rounded-lg overflow-hidden bg-base-300">
+                        @if (!string.IsNullOrEmpty(_modalCoverUrl))
+                        {
+                            @if (!_modalCoverLoaded)
+                            {
+                                <div class="skeleton absolute inset-0"></div>
+                            }
+                            <img src="@_modalCoverUrl" alt="@info?.Name"
+                                 class="absolute inset-0 w-full h-full object-cover"
+                                 @onload="() => { _modalCoverLoaded = true; StateHasChanged(); }" />
+                        }
+                        else
+                        {
+                            <div class="absolute inset-0 flex items-center justify-center text-base-content/30 text-xs">No coverart</div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Details -->
+                <div class="flex-1 space-y-3 min-w-0">
+
+                    <h3 class="font-bold text-lg leading-tight">@StripPrefix(info?.Name ?? _selectedSeries?.Name)</h3>
+
+                    <div class="flex flex-wrap gap-2">
+                        @if (!string.IsNullOrWhiteSpace(info?.Genre))
+                        {
+                            <span class="badge badge-outline">@info.Genre</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(info?.ReleaseDate))
+                        {
+                            <span class="badge badge-ghost">@info.ReleaseDate</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(info?.Rating) && info.Rating != "0")
+                        {
+                            <span class="badge badge-ghost">★ @info.Rating</span>
+                        }
+                    </div>
+
+                    <p class="text-sm leading-relaxed">
+                        @if (!string.IsNullOrWhiteSpace(info?.Plot))
+                        {
+                            @info.Plot
+                        }
+                        else
+                        {
+                            <span class="text-base-content/40 italic">No description available</span>
+                        }
+                    </p>
+
+                    <div class="space-y-1 text-sm">
+                        @if (!string.IsNullOrWhiteSpace(info?.Director))
+                        {
+                            <div><span class="text-base-content/50">Director: </span>@info.Director</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(info?.Cast))
+                        {
+                            <div><span class="text-base-content/50">Cast: </span>@info.Cast</div>
+                        }
+                    </div>
+
+                </div>
+            </div>
+
+            @if (_seriesInfo.Seasons is { Count: > 0 })
+            {
+                <div class="mt-5">
+                    <h4 class="text-sm font-semibold text-base-content/50 uppercase tracking-widest mb-3">Seasons</h4>
+                    @{
+                        var orderedSeasons = _seriesInfo.Seasons.OrderBy(s => s.SeasonNumber).ToList();
+                        var firstWithEpisodes = orderedSeasons.FirstOrDefault(s => (_seriesInfo.Episodes?.GetValueOrDefault(s.SeasonNumber?.ToString() ?? "") ?? []).Count > 0);
+                        var activeSeasonKey = _selectedSeason ?? firstWithEpisodes?.SeasonNumber?.ToString() ?? "";
+                        var activeEpisodes = _seriesInfo.Episodes?.GetValueOrDefault(activeSeasonKey) ?? [];
+                    }
+                    <div class="tabs tabs-border overflow-x-auto flex-nowrap">
+                        @foreach (var season in orderedSeasons)
+                        {
+                            var key = season.SeasonNumber?.ToString() ?? "";
+                            if ((_seriesInfo.Episodes?.GetValueOrDefault(key) ?? []).Count == 0) continue;
+                            <button class="tab whitespace-nowrap @(key == activeSeasonKey ? "tab-active" : "")"
+                                    @onclick="() => _selectedSeason = key">
+                                @(season.Name ?? $"Season {season.SeasonNumber}")
+                            </button>
+                        }
+                    </div>
+                    <div class="max-h-64 overflow-y-auto divide-y divide-base-300 border border-base-300 rounded-b-lg py-1">
+                        @if (activeEpisodes.Count > 0)
+                        {
+                            @foreach (var episode in activeEpisodes.OrderBy(e => e.EpisodeNum))
+                            {
+                                var downloadUrl = (!string.IsNullOrEmpty(episode.Id) && !string.IsNullOrEmpty(episode.ContainerExtension))
+                                    ? $"/api/v1/series/download/{episode.Id}.{episode.ContainerExtension}?name={Uri.EscapeDataString(StripPrefix(episode.Title) is { Length: > 0 } epName ? epName : $"Episode {episode.EpisodeNum}")}"
+                                    : null;
+                                var streamUrl = (!string.IsNullOrEmpty(episode.Id) && !string.IsNullOrEmpty(episode.ContainerExtension))
+                                    ? ApiOptions.Value.BuildSeriesEpisodeUrl(episode.Id!, episode.ContainerExtension!)
+                                    : null;
+                                <SeriesEpisodeRow Episode="episode" DownloadUrl="@downloadUrl" StreamUrl="@streamUrl" />
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-sm text-base-content/40 px-4 py-3">No episodes available</p>
+                        }
+                    </div>
+                </div>
+            }
+        }
+
+        <div class="modal-action">
+            <button class="btn btn-ghost" @onclick="CloseModal">Close</button>
+        </div>
+    </div>
+    <div class="modal-backdrop" @onclick="CloseModal"></div>
+</dialog>
+
+@code {
+    [Parameter] public string CategoryId { get; set; } = string.Empty;
+    [SupplyParameterFromQuery(Name = "name")] public string? CategoryName { get; set; }
+
+    private string _categoryName = string.Empty;
+    private List<SeriesResponse> _series = [];
+    private HashSet<int> _loadedImages = [];
+    private bool _loading = true;
+    private string? _error;
+    private string _search = string.Empty;
+
+    private SeriesResponse? _selectedSeries;
+    private SeriesInfoResponse? _seriesInfo;
+    private string _modalCoverUrl = string.Empty;
+    private bool _modalCoverLoaded;
+    private bool _modalLoading;
+    private string? _modalError;
+    private string? _selectedSeason;
+
+    private List<SeriesResponse> Filtered =>
+        string.IsNullOrWhiteSpace(_search)
+            ? _series
+            : _series.Where(s => FuzzyMatch(s.Name ?? string.Empty, _search)).ToList();
+
+    private static bool FuzzyMatch(string text, string query)
+    {
+        var t = text.AsSpan();
+        var q = query.AsSpan().Trim();
+        int ti = 0;
+        for (int qi = 0; qi < q.Length; qi++)
+        {
+            var ch = char.ToLowerInvariant(q[qi]);
+            while (ti < t.Length && char.ToLowerInvariant(t[ti]) != ch) ti++;
+            if (ti >= t.Length) return false;
+            ti++;
+        }
+        return true;
+    }
+
+    protected override void OnParametersSet()
+    {
+        _categoryName = !string.IsNullOrWhiteSpace(CategoryName) ? CategoryName : CategoryId;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _series = await Api.GetSeriesAsync(CategoryId);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load series: {ex.Message}";
+            return;
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            var tasks = _series
+                .Where(s => s.SeriesId.HasValue && !string.IsNullOrEmpty(s.Cover))
+                .Select(s => Covers.CacheCoverAsync(CategoryId, s.SeriesId!.Value, s.Cover));
+            await Task.WhenAll(tasks);
+            await InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private async Task OpenSeries(SeriesResponse series)
+    {
+        _selectedSeries = series;
+        _seriesInfo = null;
+        _modalCoverUrl = string.Empty;
+        _modalCoverLoaded = false;
+        _modalError = null;
+        _modalLoading = true;
+
+        try
+        {
+            _seriesInfo = await Api.GetSeriesInfoAsync(series.SeriesId ?? 0);
+            var remoteUrl = _seriesInfo.Info?.Cover;
+            _modalCoverUrl = Covers.GetCoverUrl(CategoryId, series.SeriesId ?? 0, remoteUrl);
+        }
+        catch (Exception ex)
+        {
+            _modalError = $"Failed to load series info: {ex.Message}";
+        }
+        finally
+        {
+            _modalLoading = false;
+        }
+    }
+
+    private void CloseModal()
+    {
+        _selectedSeries = null;
+        _seriesInfo = null;
+        _selectedSeason = null;
+    }
+
+    private static string StripPrefix(string? name)
+    {
+        if (string.IsNullOrEmpty(name)) return string.Empty;
+        return System.Text.RegularExpressions.Regex.Replace(name, @"^\u2503[^\u2503]*\u2503\s*", "").Trim();
+    }
+}

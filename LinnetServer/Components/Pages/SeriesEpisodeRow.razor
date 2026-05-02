@@ -1,0 +1,69 @@
+@inject IJSRuntime JS
+
+<div class="flex flex-col py-2 px-4 gap-1.5">
+    <div class="flex items-center gap-3 text-sm">
+        <span class="text-base-content/40 w-6 shrink-0 text-right tabular-nums">@Episode.EpisodeNum</span>
+        <span class="flex-1 truncate cursor-pointer hover:text-primary" @onclick="Toggle">
+            @(_title)
+        </span>
+        @if (DownloadUrl is not null)
+        {
+            <a href="@DownloadUrl" class="btn btn-primary btn-xs shrink-0 gap-1.5" title="Download" download
+               @onclick:stopPropagation>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download
+            </a>
+        }
+    </div>
+    @if (_expanded && !string.IsNullOrEmpty(StreamUrl))
+    {
+        <div class="flex items-center gap-2 pl-9">
+            <input type="text" class="input input-bordered input-xs flex-1 font-mono text-xs" value="@StreamUrl" readonly />
+            <button class="btn btn-xs btn-ghost btn-square shrink-0" title="Copy to clipboard" @onclick="Copy">
+                @if (_copied)
+                {
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                }
+                else
+                {
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                }
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public SeriesEpisode Episode { get; set; } = default!;
+    [Parameter] public string? DownloadUrl { get; set; }
+    [Parameter] public string? StreamUrl { get; set; }
+
+    private bool _expanded;
+    private bool _copied;
+
+    private string _title => StripPrefix(Episode.Title) is { Length: > 0 } t ? t : $"Episode {Episode.EpisodeNum}";
+
+    private void Toggle() => _expanded = !_expanded;
+
+    private async Task Copy()
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", StreamUrl);
+        _copied = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _copied = false;
+        StateHasChanged();
+    }
+
+    private static string StripPrefix(string? name)
+    {
+        if (string.IsNullOrEmpty(name)) return string.Empty;
+        return System.Text.RegularExpressions.Regex.Replace(name, @"^\u2503[^\u2503]*\u2503\s*", "").Trim();
+    }
+}

@@ -16,4 +16,14 @@ public class ApiClientOptions
 
         return $"{BaseUrl.TrimEnd('/')}/{streamType}/{Uri.EscapeDataString(Username)}/{Uri.EscapeDataString(Password)}/{streamId}.{extension}";
     }
+
+    public string BuildSeriesEpisodeUrl(string episodeId, string containerExtension)
+    {
+        if (string.IsNullOrEmpty(BaseUrl) || string.IsNullOrEmpty(Username) ||
+            string.IsNullOrEmpty(Password) || string.IsNullOrEmpty(episodeId) ||
+            string.IsNullOrEmpty(containerExtension))
+            return string.Empty;
+
+        return $"{BaseUrl.TrimEnd('/')}/series/{Uri.EscapeDataString(Username)}/{Uri.EscapeDataString(Password)}/{episodeId}.{containerExtension}";
+    }
 }

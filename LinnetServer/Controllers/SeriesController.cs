@@ -5,13 +5,13 @@ using Microsoft.Extensions.Options;
 namespace LinnetServer.Controllers;
 
 [ApiController]
-[Route("api/v1/vod")]
-public class VodController(IOptions<ApiClientOptions> apiOptions, IHttpClientFactory httpClientFactory) : ControllerBase
+[Route("api/v1/series")]
+public class SeriesController(IOptions<ApiClientOptions> apiOptions, IHttpClientFactory httpClientFactory) : ControllerBase
 {
-    [HttpGet("download/{streamType}/{streamId}.{extension}")]
-    public async Task<IActionResult> Download(string streamType, int streamId, string extension, [FromQuery] string? name, CancellationToken ct)
+    [HttpGet("download/{episodeId}.{containerExtension}")]
+    public async Task<IActionResult> Download(string episodeId, string containerExtension, [FromQuery] string? name, CancellationToken ct)
     {
-        var remoteUrl = apiOptions.Value.BuildStreamUrl(streamType, streamId, extension);
+        var remoteUrl = apiOptions.Value.BuildSeriesEpisodeUrl(episodeId, containerExtension);
         if (string.IsNullOrEmpty(remoteUrl)) return BadRequest();
 
         var http = httpClientFactory.CreateClient("vod-download");
@@ -21,8 +21,8 @@ public class VodController(IOptions<ApiClientOptions> apiOptions, IHttpClientFac
             return StatusCode((int)remoteResponse.StatusCode);
 
         var contentType = remoteResponse.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
-        var baseName = SanitizeFileName(name) is { Length: > 0 } n ? n : streamId.ToString();
-        var fileName = $"{baseName}.{extension}";
+        var baseName = SanitizeFileName(name) is { Length: > 0 } n ? n : episodeId;
+        var fileName = $"{baseName}.{containerExtension}";
 
         Response.Headers.Append("Content-Disposition", $"attachment; filename=\"{fileName}\"");
 

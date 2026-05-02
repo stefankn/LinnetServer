@@ -19,10 +19,21 @@
             <h1 class="text-2xl font-bold">@_categoryName</h1>
             @if (!_loading)
             {
-                <p class="text-base-content/50 text-sm mt-0.5">@_streams.Count stream@(_streams.Count == 1 ? "" : "s")</p>
+                var filtered = Filtered;
+                <p class="text-base-content/50 text-sm mt-0.5">
+                    @(string.IsNullOrWhiteSpace(_search)
+                        ? $"{_streams.Count} movie{(_streams.Count == 1 ? "" : "s")}"
+                        : $"{filtered.Count} of {_streams.Count} movie{(_streams.Count == 1 ? "" : "s")}")
+                </p>
             }
         </div>
     </div>
+
+    @if (!_loading && _error is null && _streams.Count > 0)
+    {
+        <input type="search" class="input input-bordered w-full" placeholder="Search movies…"
+               @bind="_search" @bind:event="oninput" />
+    }
 
     @if (_loading)
     {
@@ -46,8 +57,15 @@
     }
     else
     {
+        var filtered = Filtered;
+        @if (filtered.Count == 0)
+        {
+            <p class="text-center text-base-content/40 py-12">No movies match "@_search"</p>
+        }
+        else
+        {
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            @foreach (var stream in _streams)
+            @foreach (var stream in filtered)
             {
                 <button @onclick="() => OpenStream(stream)" class="flex flex-col gap-2 text-left cursor-pointer">
                     <div class="relative aspect-[2/3] rounded-lg overflow-hidden bg-base-300">
@@ -74,6 +92,7 @@
                 </button>
             }
         </div>
+        }
     }
 
 </div>
@@ -229,6 +248,27 @@
     private HashSet<int> _loadedImages = [];
     private bool _loading = true;
     private string? _error;
+    private string _search = string.Empty;
+
+    private List<VodStreamResponse> Filtered =>
+        string.IsNullOrWhiteSpace(_search)
+            ? _streams
+            : _streams.Where(s => FuzzyMatch(s.Name, _search)).ToList();
+
+    private static bool FuzzyMatch(string text, string query)
+    {
+        var t = text.AsSpan();
+        var q = query.AsSpan().Trim();
+        int ti = 0;
+        for (int qi = 0; qi < q.Length; qi++)
+        {
+            var ch = char.ToLowerInvariant(q[qi]);
+            while (ti < t.Length && char.ToLowerInvariant(t[ti]) != ch) ti++;
+            if (ti >= t.Length) return false;
+            ti++;
+        }
+        return true;
+    }
 
     private VodStreamResponse? _selectedStream;
     private VodInfoResponse? _vodInfo;
@@ -245,7 +285,8 @@
         if (string.IsNullOrEmpty(stream.StreamType) || string.IsNullOrEmpty(stream.ContainerExtension))
             return string.Empty;
 
-        return $"/api/v1/vod/download/{stream.StreamType}/{stream.StreamId}.{stream.ContainerExtension}";
+        var name = Uri.EscapeDataString(StripPrefix(stream.Name));
+        return $"/api/v1/vod/download/{stream.StreamType}/{stream.StreamId}.{stream.ContainerExtension}?name={name}";
     }
 
     private static string StripPrefix(string? name)
