@@ -183,16 +183,15 @@
                 </div>
             </div>
 
-            @if (_seriesInfo.Seasons is { Count: > 0 })
+            @if (HasSeasons || HasUnlinkedEpisodes)
             {
+                var orderedSeasons = (_seriesInfo.Seasons ?? []).OrderBy(s => s.SeasonNumber).ToList();
+                var activeSeasonKey = _selectedSeason ?? DefaultSeasonKey;
+                var activeEpisodes = activeSeasonKey == "__unlinked__"
+                    ? UnlinkedEpisodes
+                    : (_seriesInfo.Episodes?.GetValueOrDefault(activeSeasonKey) ?? []);
                 <div class="mt-5">
                     <h4 class="text-sm font-semibold text-base-content/50 uppercase tracking-widest mb-3">Seasons</h4>
-                    @{
-                        var orderedSeasons = _seriesInfo.Seasons.OrderBy(s => s.SeasonNumber).ToList();
-                        var firstWithEpisodes = orderedSeasons.FirstOrDefault(s => (_seriesInfo.Episodes?.GetValueOrDefault(s.SeasonNumber?.ToString() ?? "") ?? []).Count > 0);
-                        var activeSeasonKey = _selectedSeason ?? firstWithEpisodes?.SeasonNumber?.ToString() ?? "";
-                        var activeEpisodes = _seriesInfo.Episodes?.GetValueOrDefault(activeSeasonKey) ?? [];
-                    }
                     <div class="tabs tabs-border overflow-x-auto flex-nowrap">
                         @foreach (var season in orderedSeasons)
                         {
@@ -203,11 +202,18 @@
                                 @(season.Name ?? $"Season {season.SeasonNumber}")
                             </button>
                         }
+                        @if (HasUnlinkedEpisodes)
+                        {
+                            <button class="tab whitespace-nowrap @("__unlinked__" == activeSeasonKey ? "tab-active" : "")"
+                                    @onclick='() => _selectedSeason = "__unlinked__"'>
+                                Episodes
+                            </button>
+                        }
                     </div>
                     <div class="max-h-64 overflow-y-auto divide-y divide-base-300 border border-base-300 rounded-b-lg py-1">
                         @if (activeEpisodes.Count > 0)
                         {
-                            @foreach (var episode in activeEpisodes.OrderBy(e => e.EpisodeNum))
+                            @foreach (var episode in activeEpisodes.OrderBy(e => e.Season).ThenBy(e => e.EpisodeNum))
                             {
                                 var downloadUrl = (!string.IsNullOrEmpty(episode.Id) && !string.IsNullOrEmpty(episode.ContainerExtension))
                                     ? $"/api/v1/series/download/{episode.Id}.{episode.ContainerExtension}?name={Uri.EscapeDataString(StripPrefix(episode.Title) is { Length: > 0 } epName ? epName : $"Episode {episode.EpisodeNum}")}"
@@ -326,6 +332,33 @@
         finally
         {
             _modalLoading = false;
+        }
+    }
+
+    private List<SeriesEpisode> UnlinkedEpisodes
+    {
+        get
+        {
+            if (_seriesInfo?.Episodes is null) return [];
+            var seasonKeys = (_seriesInfo.Seasons ?? []).Select(s => s.SeasonNumber?.ToString() ?? "").ToHashSet();
+            return _seriesInfo.Episodes.Where(kv => !seasonKeys.Contains(kv.Key)).SelectMany(kv => kv.Value).ToList();
+        }
+    }
+
+    private bool HasSeasons => (_seriesInfo?.Seasons ?? [])
+        .Any(s => (_seriesInfo?.Episodes?.GetValueOrDefault(s.SeasonNumber?.ToString() ?? "") ?? []).Count > 0);
+
+    private bool HasUnlinkedEpisodes => UnlinkedEpisodes.Count > 0;
+
+    private string DefaultSeasonKey
+    {
+        get
+        {
+            var firstSeason = (_seriesInfo?.Seasons ?? [])
+                .OrderBy(s => s.SeasonNumber)
+                .Select(s => s.SeasonNumber?.ToString() ?? "")
+                .FirstOrDefault(k => (_seriesInfo?.Episodes?.GetValueOrDefault(k) ?? []).Count > 0);
+            return firstSeason ?? (HasUnlinkedEpisodes ? "__unlinked__" : "");
         }
     }
 
