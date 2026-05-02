@@ -59,12 +59,6 @@
             {
                 <div class="overflow-x-auto">
                     <table class="table table-zebra">
-                        <thead>
-                            <tr>
-                                <th>Category</th>
-                                <th>ID</th>
-                            </tr>
-                        </thead>
                         <tbody>
                             @foreach (var category in filtered)
                             {
@@ -72,7 +66,6 @@
                                     <td class="font-medium">
                                         <a href="/series/@category.CategoryId?name=@Uri.EscapeDataString(category.CategoryName)" class="link link-hover">@category.CategoryName</a>
                                     </td>
-                                    <td class="text-base-content/50 text-sm">@category.CategoryId</td>
                                 </tr>
                             }
                         </tbody>

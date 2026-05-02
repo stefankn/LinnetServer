@@ -152,15 +152,15 @@
                     <div class="flex flex-wrap gap-2">
                         @if (!string.IsNullOrWhiteSpace(info?.Genre))
                         {
-                            <span class="badge badge-outline">@info.Genre</span>
+                            <span class="badge badge-primary">@info.Genre</span>
                         }
                         @if (!string.IsNullOrWhiteSpace(info?.Country))
                         {
-                            <span class="badge badge-outline">@info.Country</span>
+                            <span class="badge badge-neutral">@info.Country</span>
                         }
                         @if (!string.IsNullOrWhiteSpace(movie?.ContainerExtension))
                         {
-                            <span class="badge badge-ghost">@movie.ContainerExtension</span>
+                            <span class="badge badge-secondary">@movie.ContainerExtension</span>
                         }
                     </div>
 

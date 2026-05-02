@@ -2,3 +2,8 @@
 @plugin "daisyui" {
     themes: bumblebee --default, night --prefersdark;
 }
+
+/* Suppress the focus ring Blazor adds via tabindex="-1" on navigation */
+[tabindex="-1"]:focus {
+    outline: none;
+}
