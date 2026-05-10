@@ -19,6 +19,7 @@ public class ChannelGroupItem
     public string EffectiveLogoUrl => CustomLogoPath ?? StreamIcon;
 
     public DateTime? EpgLastUpdated { get; set; }
+    public bool EpgFetchFailed { get; set; }
 
     public ChannelGroup ChannelGroup { get; set; } = null!;
     public ICollection<ChannelProgram> Programs { get; set; } = [];

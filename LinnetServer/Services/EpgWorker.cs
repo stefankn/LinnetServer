@@ -38,6 +38,11 @@ public partial class EpgWorker(
             catch (Exception ex)
             {
                 LogEpgUpdateFailed(logger, ex, channelGroupItemId, MaxRetries);
+                await using var scope = scopeFactory.CreateAsyncScope();
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                await db.ChannelGroupItems
+                    .Where(c => c.Id == channelGroupItemId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(c => c.EpgFetchFailed, true), ct);
             }
             finally
             {
@@ -91,6 +96,7 @@ public partial class EpgWorker(
         }
 
         item.EpgLastUpdated = DateTime.UtcNow;
+        item.EpgFetchFailed = false;
         await db.SaveChangesAsync(ct);
 
         await tx.CommitAsync(ct);
