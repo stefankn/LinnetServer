@@ -571,7 +571,7 @@ else
             catch { /* logo download failed, not critical */ }
         }
 
-        EpgQueue.Enqueue(item.Id);
+        EpgQueue.Enqueue(item.Id, EpgUpdateTrigger.Manual);
     }
 
     private async Task RemoveChannel(ChannelGroupItem item)

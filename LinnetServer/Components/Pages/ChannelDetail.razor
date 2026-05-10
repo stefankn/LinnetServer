@@ -55,56 +55,133 @@ else
             }
         </div>
 
-        @if (_programsByDay.Count == 0)
-        {
-            <div class="card bg-base-100 shadow">
-                <div class="card-body items-center text-center py-12 text-base-content/40">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <p class="font-medium">No program guide available</p>
-                </div>
+        <div role="tablist" class="tabs tabs-border">
+            <input type="radio" name="channel_tabs_@ItemId" role="tab" class="tab" aria-label="Guide" checked />
+            <div role="tabpanel" class="tab-content pt-4">
+                @if (_programsByDay.Count == 0)
+                {
+                    <div class="card bg-base-100 shadow">
+                        <div class="card-body items-center text-center py-12 text-base-content/40">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <p class="font-medium">No program guide available</p>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="space-y-6">
+                        @foreach (var (day, programs) in _programsByDay)
+                        {
+                            <div class="space-y-2">
+                                <h2 class="text-sm font-semibold text-base-content/50 uppercase tracking-wide px-1">
+                                    @FormatDay(day)
+                                </h2>
+                                <div class="card bg-base-100 shadow">
+                                    <div class="divide-y divide-base-200">
+                                        @foreach (var program in programs)
+                                        {
+                                            var isNow = program.StartTime <= DateTime.UtcNow && program.EndTime >= DateTime.UtcNow;
+                                            <div class="px-4 py-3 flex gap-4 @(isNow ? "bg-primary/5" : "")">
+                                                <div class="w-32 shrink-0 text-sm text-base-content/50 pt-0.5">
+                                                    @program.StartTime.ToLocalTime().ToString("HH:mm")
+                                                    <span class="mx-0.5">–</span>
+                                                    @program.EndTime.ToLocalTime().ToString("HH:mm")
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="font-medium @(isNow ? "text-primary" : "")">@program.Title</span>
+                                                        @if (isNow)
+                                                        {
+                                                            <span class="badge badge-primary badge-xs">Now</span>
+                                                        }
+                                                    </div>
+                                                    @if (!string.IsNullOrEmpty(program.Description))
+                                                    {
+                                                        <p class="text-sm text-base-content/50 mt-0.5 line-clamp-2">@program.Description</p>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
-        }
-        else
-        {
-            @foreach (var (day, programs) in _programsByDay)
-            {
-                <div class="space-y-2">
-                    <h2 class="text-sm font-semibold text-base-content/50 uppercase tracking-wide px-1">
-                        @FormatDay(day)
-                    </h2>
+
+            <input type="radio" name="channel_tabs_@ItemId" role="tab" class="tab" aria-label="Events" />
+            <div role="tabpanel" class="tab-content pt-4">
+                @if (_updateLogs.Count == 0)
+                {
+                    <div class="card bg-base-100 shadow">
+                        <div class="card-body items-center text-center py-12 text-base-content/40">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            <p class="font-medium">No update events yet</p>
+                        </div>
+                    </div>
+                }
+                else
+                {
                     <div class="card bg-base-100 shadow">
                         <div class="divide-y divide-base-200">
-                            @foreach (var program in programs)
+                            @foreach (var log in _updateLogs)
                             {
-                                var isNow = program.StartTime <= DateTime.UtcNow && program.EndTime >= DateTime.UtcNow;
-                                <div class="px-4 py-3 flex gap-4 @(isNow ? "bg-primary/5" : "")">
-                                    <div class="w-32 shrink-0 text-sm text-base-content/50 pt-0.5">
-                                        @program.StartTime.ToLocalTime().ToString("HH:mm")
-                                        <span class="mx-0.5">–</span>
-                                        @program.EndTime.ToLocalTime().ToString("HH:mm")
+                                <div class="px-4 py-3 flex items-start gap-3">
+                                    <div class="mt-0.5 shrink-0">
+                                        @if (log.Status == EpgUpdateStatus.Completed)
+                                        {
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        }
+                                        else if (log.Status == EpgUpdateStatus.Failed)
+                                        {
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        }
+                                        else
+                                        {
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        }
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-medium @(isNow ? "text-primary" : "")">@program.Title</span>
-                                            @if (isNow)
-                                            {
-                                                <span class="badge badge-primary badge-xs">Now</span>
-                                            }
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="text-sm font-medium">
+                                                @log.Timestamp.ToLocalTime().ToString("g")
+                                            </span>
+                                            <span class="badge badge-ghost badge-xs">@log.Trigger</span>
                                         </div>
-                                        @if (!string.IsNullOrEmpty(program.Description))
-                                        {
-                                            <p class="text-sm text-base-content/50 mt-0.5 line-clamp-2">@program.Description</p>
-                                        }
+                                        <p class="text-sm text-base-content/60 mt-0.5">
+                                            @if (log.Status == EpgUpdateStatus.Completed)
+                                            {
+                                                @($"Updated — {log.ProgramCount} programs loaded")
+                                            }
+                                            else if (log.Status == EpgUpdateStatus.Failed)
+                                            {
+                                                @($"Failed — {log.ErrorMessage}")
+                                            }
+                                            else
+                                            {
+                                                <span>Started</span>
+                                            }
+                                        </p>
                                     </div>
                                 </div>
                             }
                         </div>
                     </div>
-                </div>
-            }
-        }
+                }
+            </div>
+        </div>
 
     </div>
 }
@@ -115,6 +192,7 @@ else
 
     private ChannelGroupItem? _item;
     private SortedDictionary<DateOnly, List<ChannelProgram>> _programsByDay = [];
+    private List<EpgUpdateLog> _updateLogs = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -127,6 +205,7 @@ else
         }
 
         await LoadProgramsAsync();
+        await LoadUpdateLogsAsync();
     }
 
     private async Task LoadProgramsAsync()
@@ -152,16 +231,28 @@ else
         }
     }
 
+    private async Task LoadUpdateLogsAsync()
+    {
+        _updateLogs = await Db.EpgUpdateLogs
+            .Where(l => l.ChannelGroupItemId == ItemId)
+            .OrderByDescending(l => l.Timestamp)
+            .Take(20)
+            .ToListAsync();
+    }
+
     private void RefreshEpg()
     {
-        EpgQueue.Enqueue(ItemId);
+        EpgQueue.Enqueue(ItemId, EpgUpdateTrigger.Manual);
     }
 
     private void OnEpgQueueChanged() =>
         InvokeAsync(async () =>
         {
             if (!EpgQueue.IsInProgress(ItemId))
+            {
                 await LoadProgramsAsync();
+                await LoadUpdateLogsAsync();
+            }
             StateHasChanged();
         });
 

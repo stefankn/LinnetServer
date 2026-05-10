@@ -1,23 +1,26 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
+using LinnetServer.Data.Models;
 
 namespace LinnetServer.Services;
 
+public record EpgQueueItem(int ChannelGroupItemId, EpgUpdateTrigger Trigger);
+
 public class EpgUpdateQueue
 {
-    private readonly Channel<int> _channel = Channel.CreateUnbounded<int>();
-    private readonly ConcurrentDictionary<int, bool> _pending = new();
+    private readonly Channel<EpgQueueItem> _channel = Channel.CreateUnbounded<EpgQueueItem>();
+    private readonly ConcurrentDictionary<int, EpgUpdateTrigger> _pending = new();
     private readonly ConcurrentDictionary<int, bool> _inProgress = new();
 
     public event Action? OnChanged;
 
-    public void Enqueue(int channelGroupItemId)
+    public void Enqueue(int channelGroupItemId, EpgUpdateTrigger trigger)
     {
         if (_inProgress.ContainsKey(channelGroupItemId))
             return;
-        if (!_pending.TryAdd(channelGroupItemId, true))
+        if (!_pending.TryAdd(channelGroupItemId, trigger))
             return;
-        _channel.Writer.TryWrite(channelGroupItemId);
+        _channel.Writer.TryWrite(new EpgQueueItem(channelGroupItemId, trigger));
     }
 
     public bool IsInProgress(int channelGroupItemId) =>
@@ -39,6 +42,6 @@ public class EpgUpdateQueue
         OnChanged?.Invoke();
     }
 
-    public IAsyncEnumerable<int> ReadAllAsync(CancellationToken ct) =>
+    public IAsyncEnumerable<EpgQueueItem> ReadAllAsync(CancellationToken ct) =>
         _channel.Reader.ReadAllAsync(ct);
 }

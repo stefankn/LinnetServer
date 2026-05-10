@@ -15,45 +15,65 @@ public partial class EpgWorker(
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
-        await foreach (var channelGroupItemId in queue.ReadAllAsync(ct))
+        await foreach (var item in queue.ReadAllAsync(ct))
         {
-            queue.MarkStarted(channelGroupItemId);
+            queue.MarkStarted(item.ChannelGroupItemId);
+            await WriteLogAsync(item.ChannelGroupItemId, EpgUpdateStatus.Started, item.Trigger, null, null, ct);
             try
             {
+                var programCount = 0;
                 for (var attempt = 1; attempt <= MaxRetries; attempt++)
                 {
                     try
                     {
-                        await UpdateEpgAsync(channelGroupItemId, ct);
+                        programCount = await UpdateEpgAsync(item.ChannelGroupItemId, ct);
                         break;
                     }
                     catch (HttpRequestException ex) when (attempt < MaxRetries)
                     {
                         var delay = RetryDelays[attempt - 1];
-                        LogEpgFetchRetry(logger, channelGroupItemId, attempt, MaxRetries, (int)delay.TotalSeconds, ex.Message);
+                        LogEpgFetchRetry(logger, item.ChannelGroupItemId, attempt, MaxRetries, (int)delay.TotalSeconds, ex.Message);
                         await Task.Delay(delay, ct);
                     }
                 }
+                await WriteLogAsync(item.ChannelGroupItemId, EpgUpdateStatus.Completed, item.Trigger, programCount, null, ct);
             }
             catch (Exception ex)
             {
-                LogEpgUpdateFailed(logger, ex, channelGroupItemId, MaxRetries);
+                LogEpgUpdateFailed(logger, ex, item.ChannelGroupItemId, MaxRetries);
                 await using var scope = scopeFactory.CreateAsyncScope();
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 await db.ChannelGroupItems
-                    .Where(c => c.Id == channelGroupItemId)
+                    .Where(c => c.Id == item.ChannelGroupItemId)
                     .ExecuteUpdateAsync(s => s.SetProperty(c => c.EpgFetchFailed, true), ct);
+                await WriteLogAsync(item.ChannelGroupItemId, EpgUpdateStatus.Failed, item.Trigger, null, ex.Message, ct);
             }
             finally
             {
-                queue.MarkCompleted(channelGroupItemId);
+                queue.MarkCompleted(item.ChannelGroupItemId);
             }
 
             await Task.Delay(TimeSpan.FromSeconds(5), ct);
         }
     }
 
-    private async Task UpdateEpgAsync(int channelGroupItemId, CancellationToken ct)
+    private async Task WriteLogAsync(int channelGroupItemId, EpgUpdateStatus status, EpgUpdateTrigger trigger, int? programCount, string? errorMessage, CancellationToken ct)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.EpgUpdateLogs.Add(new EpgUpdateLog
+        {
+            ChannelGroupItemId = channelGroupItemId,
+            Timestamp = DateTime.UtcNow,
+            Status = status,
+            Trigger = trigger,
+            ProgramCount = programCount,
+            ErrorMessage = errorMessage,
+        });
+        await db.SaveChangesAsync(ct);
+    }
+
+    private async Task<int> UpdateEpgAsync(int channelGroupItemId, CancellationToken ct)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -63,7 +83,7 @@ public partial class EpgWorker(
         if (item is null)
         {
             LogChannelGroupItemNotFound(logger, channelGroupItemId);
-            return;
+            return 0;
         }
 
         LogFetchingEpg(logger, item.ChannelName, item.StreamId);
@@ -102,6 +122,7 @@ public partial class EpgWorker(
         await tx.CommitAsync(ct);
 
         LogEpgUpdateComplete(logger, item.ChannelName, programs.Count);
+        return programs.Count;
     }
 
     private static string DecodeBase64(string value)

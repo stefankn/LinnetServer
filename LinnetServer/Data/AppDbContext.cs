@@ -8,6 +8,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ChannelGroup> ChannelGroups => Set<ChannelGroup>();
     public DbSet<ChannelGroupItem> ChannelGroupItems => Set<ChannelGroupItem>();
     public DbSet<ChannelProgram> ChannelPrograms => Set<ChannelProgram>();
+    public DbSet<EpgUpdateLog> EpgUpdateLogs => Set<EpgUpdateLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -16,5 +17,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany(i => i.Programs)
             .HasForeignKey(p => p.ChannelGroupItemId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<EpgUpdateLog>()
+            .HasOne(l => l.ChannelGroupItem)
+            .WithMany()
+            .HasForeignKey(l => l.ChannelGroupItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<EpgUpdateLog>()
+            .HasIndex(l => l.ChannelGroupItemId);
     }
 }

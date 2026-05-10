@@ -1,4 +1,5 @@
 using LinnetServer.Data;
+using LinnetServer.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace LinnetServer.Services;
@@ -13,14 +14,14 @@ public partial class EpgRefreshWorker(
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
-        await CheckAndEnqueueStaleChannelsAsync(ct);
+        await CheckAndEnqueueStaleChannelsAsync(EpgUpdateTrigger.Startup, ct);
 
         while (!ct.IsCancellationRequested)
         {
             var delay = TimeUntilNext(RunAt);
             LogNextRun(logger, DateTime.Now + delay);
             await Task.Delay(delay, ct);
-            await CheckAndEnqueueStaleChannelsAsync(ct);
+            await CheckAndEnqueueStaleChannelsAsync(EpgUpdateTrigger.Nightly, ct);
         }
     }
 
@@ -33,7 +34,7 @@ public partial class EpgRefreshWorker(
         return next - now;
     }
 
-    public async Task CheckAndEnqueueStaleChannelsAsync(CancellationToken ct = default)
+    public async Task CheckAndEnqueueStaleChannelsAsync(EpgUpdateTrigger trigger = EpgUpdateTrigger.Startup, CancellationToken ct = default)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -54,7 +55,7 @@ public partial class EpgRefreshWorker(
         LogEnqueuingStaleChannels(logger, staleIds.Count);
 
         foreach (var id in staleIds)
-            queue.Enqueue(id);
+            queue.Enqueue(id, trigger);
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "EPG refresh scheduled, next run at {NextRun:yyyy-MM-dd HH:mm}")]
