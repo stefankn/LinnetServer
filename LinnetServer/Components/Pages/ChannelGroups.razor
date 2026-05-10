@@ -42,6 +42,18 @@
                             <tr>
                                 <td class="font-medium">
                                     <a href="/groups/@group.Id" class="link link-hover">@group.Name</a>
+                                    @if (group.Type == ChannelGroupType.Live)
+                                    {
+                                        <span class="badge badge-success badge-sm ml-2">Live</span>
+                                    }
+                                    else if (group.Type == ChannelGroupType.VodMovies)
+                                    {
+                                        <span class="badge badge-warning badge-sm ml-2">Movies</span>
+                                    }
+                                    else if (group.Type == ChannelGroupType.VodSeries)
+                                    {
+                                        <span class="badge badge-accent badge-sm ml-2">Series</span>
+                                    }
                                 </td>
                                 <td class="text-base-content/50 text-sm">@group.CreatedAt.ToLocalTime().ToString("d MMM yyyy")</td>
                                 <td>

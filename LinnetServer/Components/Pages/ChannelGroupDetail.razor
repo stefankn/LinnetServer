@@ -40,11 +40,14 @@ else
                     <p class="text-base-content/50 text-sm mt-0.5">@_items.Count channel@(_items.Count == 1 ? "" : "s")</p>
                 </div>
             </div>
-            <button class="btn btn-primary btn-sm" @onclick="OpenAddModal">Add Channels</button>
+            @if (_group.Type == ChannelGroupType.Live)
+            {
+                <button class="btn btn-primary btn-sm" @onclick="OpenAddModal">Add Channels</button>
+            }
         </div>
 
         <div class="card bg-base-100 shadow">
-            @if (_items.Count == 0)
+            @if (_items.Count == 0 && _group.Type == ChannelGroupType.Live)
             {
                 <div class="card-body items-center text-center py-12 text-base-content/40">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24"

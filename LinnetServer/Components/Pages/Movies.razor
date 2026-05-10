@@ -1,6 +1,9 @@
 @page "/movies"
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @inject ApiClient Api
+@inject AppDbContext Db
+@inject ChannelGroupsState GroupsState
+@using LinnetServer.Data
 
 <PageTitle>Movies — Linnet</PageTitle>
 
@@ -66,6 +69,23 @@
                                     <td class="font-medium">
                                         <a href="/movies/@category.CategoryId?name=@Uri.EscapeDataString(category.CategoryName)" class="link link-hover">@category.CategoryName</a>
                                     </td>
+                                    <td class="text-right">
+                                        @if (_addedCategories.Contains(category.CategoryId))
+                                        {
+                                            <span class="btn btn-xs btn-disabled">Added</span>
+                                        }
+                                        else if (_addingCategories.Contains(category.CategoryId))
+                                        {
+                                            <span class="loading loading-spinner loading-xs"></span>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-xs btn-primary"
+                                                    @onclick="() => AddAsChannelGroup(category)">
+                                                Add as Channel Group
+                                            </button>
+                                        }
+                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -82,6 +102,8 @@
     private bool _loading = true;
     private string? _error;
     private string _search = string.Empty;
+    private HashSet<string> _addingCategories = [];
+    private HashSet<string> _addedCategories = [];
 
     private List<VodCategoryResponse> Filtered =>
         string.IsNullOrWhiteSpace(_search)
@@ -109,6 +131,11 @@
         try
         {
             _categories = await Api.GetVodCategoriesAsync();
+            var existing = await Db.ChannelGroups
+                .Where(g => g.Type == ChannelGroupType.VodMovies && g.VodCategoryId != null)
+                .Select(g => g.VodCategoryId!)
+                .ToListAsync();
+            _addedCategories = existing.ToHashSet();
         }
         catch (Exception ex)
         {
@@ -117,6 +144,28 @@
         finally
         {
             _loading = false;
+        }
+    }
+
+    private async Task AddAsChannelGroup(VodCategoryResponse category)
+    {
+        if (_addedCategories.Contains(category.CategoryId)) return;
+        _addingCategories.Add(category.CategoryId);
+        try
+        {
+            Db.ChannelGroups.Add(new ChannelGroup
+            {
+                Name = category.CategoryName,
+                Type = ChannelGroupType.VodMovies,
+                VodCategoryId = category.CategoryId,
+            });
+            await Db.SaveChangesAsync();
+            _addedCategories.Add(category.CategoryId);
+            GroupsState.NotifyChanged();
+        }
+        finally
+        {
+            _addingCategories.Remove(category.CategoryId);
         }
     }
 }
