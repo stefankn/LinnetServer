@@ -64,29 +64,6 @@ public class GroupsController(AppDbContext db, IOptions<ApiClientOptions> apiOpt
         return Ok(result);
     }
 
-    /// <remarks>Returns details for a single movie by stream ID.</remarks>
-    [HttpGet("{id}/movies/{streamId}")]
-    public async Task<IActionResult> GetMovie(int id, int streamId)
-    {
-        var group = await db.ChannelGroups.FindAsync(id);
-        if (group is null) return NotFound();
-        if (group.Type != ChannelGroupType.VodMovies)
-            return BadRequest("Group is not a VOD movies group.");
-
-        VodInfoResponse info;
-        try { info = await api.GetVodInfoAsync(streamId); }
-        catch { return StatusCode(502, "Failed to fetch movie details from provider."); }
-
-        var opts = apiOptions.Value;
-        return Ok(new
-        {
-            info.Info,
-            StreamUrl = info.MovieData?.StreamId is int sid
-                ? opts.BuildStreamUrl("movie", sid, info.MovieData.ContainerExtension ?? "mp4")
-                : null,
-        });
-    }
-
     /// <remarks>Returns all series belonging to a VOD series group, fetched live from the provider.</remarks>
     [HttpGet("{id}/series")]
     public async Task<IActionResult> GetSeries(int id)
@@ -108,77 +85,6 @@ public class GroupsController(AppDbContext db, IOptions<ApiClientOptions> apiOpt
             Cover = s.Cover ?? string.Empty,
         }));
     }
-
-    /// <remarks>Returns details for a single series by series ID, with seasons and episodes.</remarks>
-    [HttpGet("{id}/series/{seriesId}")]
-    public async Task<IActionResult> GetSeriesDetail(int id, int seriesId)
-    {
-        var group = await db.ChannelGroups.FindAsync(id);
-        if (group is null) return NotFound();
-        if (group.Type != ChannelGroupType.VodSeries)
-            return BadRequest("Group is not a VOD series group.");
-
-        SeriesInfoResponse info;
-        try { info = await api.GetSeriesInfoAsync(seriesId); }
-        catch { return StatusCode(502, "Failed to fetch series details from provider."); }
-
-        var opts = apiOptions.Value;
-        var episodesBySeasonKey = info.Episodes ?? [];
-        var knownSeasonKeys = (info.Seasons ?? [])
-            .Select(s => s.SeasonNumber?.ToString() ?? string.Empty)
-            .ToHashSet();
-
-        var mappedSeasons = (info.Seasons ?? []).Select(s =>
-        {
-            var key = s.SeasonNumber?.ToString() ?? string.Empty;
-            var episodes = episodesBySeasonKey.TryGetValue(key, out var eps) ? eps : [];
-            return (SeasonNumber: s.SeasonNumber ?? 0, Season: new
-            {
-                s.SeasonNumber,
-                s.Name,
-                s.AirDate,
-                s.Overview,
-                s.Cover,
-                Episodes = MapEpisodes(episodes, opts),
-            });
-        });
-
-        var orphanSeasons = episodesBySeasonKey
-            .Where(kv => !knownSeasonKeys.Contains(kv.Key))
-            .Select(kv =>
-            {
-                var seasonNumber = int.TryParse(kv.Key, out var n) ? n : 0;
-                return (SeasonNumber: seasonNumber, Season: new
-                {
-                    SeasonNumber = (int?)seasonNumber,
-                    Name = (string?)null,
-                    AirDate = (string?)null,
-                    Overview = (string?)null,
-                    Cover = (string?)null,
-                    Episodes = MapEpisodes(kv.Value, opts),
-                });
-            });
-
-        var seasons = mappedSeasons
-            .Concat(orphanSeasons)
-            .OrderBy(s => s.SeasonNumber)
-            .Select(s => s.Season);
-
-        return Ok(new { info.Info, Seasons = seasons });
-    }
-
-    private static IEnumerable<object> MapEpisodes(IEnumerable<SeriesEpisode> episodes, ApiClientOptions opts) =>
-        episodes
-            .OrderBy(e => e.EpisodeNum)
-            .Select(e => new
-            {
-                e.EpisodeNum,
-                e.Title,
-                e.ContainerExtension,
-                StreamUrl = e.Id is not null
-                    ? opts.BuildSeriesEpisodeUrl(e.Id, e.ContainerExtension ?? "mkv")
-                    : null,
-            });
 
     /// <remarks>Returns all movies belonging to a VOD movies group, fetched live from the provider.</remarks>
     [HttpGet("{id}/movies")]
