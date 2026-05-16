@@ -84,6 +84,7 @@ public class VodController(IOptions<ApiClientOptions> apiOptions, ApiClient api,
             .OrderBy(e => e.EpisodeNum)
             .Select(e => new
             {
+                e.Id,
                 e.EpisodeNum,
                 e.Title,
                 e.ContainerExtension,
