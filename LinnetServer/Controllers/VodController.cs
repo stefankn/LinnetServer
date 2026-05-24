@@ -17,11 +17,14 @@ public class VodController(IOptions<ApiClientOptions> apiOptions, ApiClient api,
         catch { return StatusCode(502, "Failed to fetch movie details from provider."); }
 
         var opts = apiOptions.Value;
+        var sid = info.MovieData?.StreamId;
         return Ok(new
         {
             info.Info,
-            StreamUrl = info.MovieData?.StreamId is int sid
-                ? opts.BuildStreamUrl("movie", sid, info.MovieData.ContainerExtension ?? "mp4")
+            StreamId = sid,
+            CoverUrl = info.Info?.CoverBig ?? info.Info?.MovieImage,
+            StreamUrl = sid is int id
+                ? opts.BuildStreamUrl("movie", id, info.MovieData!.ContainerExtension ?? "mp4")
                 : null,
         });
     }
