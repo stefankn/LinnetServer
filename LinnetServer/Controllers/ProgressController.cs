@@ -9,13 +9,13 @@ public record UpsertWatchProgressRequest(
     WatchProgressContentType ContentType,
     string StreamId,
     string Title,
-    string? CoverUrl,
-    int? DurationSeconds,
-    int? SeriesId,
-    int? SeasonNumber,
-    int? EpisodeNumber,
     int PositionSeconds,
-    bool IsCompleted
+    int DurationSeconds,
+    bool IsCompleted,
+    string? CoverUrl = null,
+    int? SeriesId = null,
+    int? SeasonNumber = null,
+    int? EpisodeNumber = null
 );
 
 public record WatchProgressItem(
@@ -24,7 +24,7 @@ public record WatchProgressItem(
     string StreamId,
     string Title,
     string? CoverUrl,
-    int? DurationSeconds,
+    int DurationSeconds,
     int? SeriesId,
     int? SeasonNumber,
     int? EpisodeNumber,
