@@ -9,6 +9,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ChannelGroupItem> ChannelGroupItems => Set<ChannelGroupItem>();
     public DbSet<ChannelProgram> ChannelPrograms => Set<ChannelProgram>();
     public DbSet<EpgUpdateLog> EpgUpdateLogs => Set<EpgUpdateLog>();
+    public DbSet<WatchProgress> WatchProgressItems => Set<WatchProgress>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,5 +27,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         modelBuilder.Entity<EpgUpdateLog>()
             .HasIndex(l => l.ChannelGroupItemId);
+
+        modelBuilder.Entity<WatchProgress>()
+            .HasIndex(w => new { w.ContentType, w.StreamId })
+            .IsUnique();
+
+        modelBuilder.Entity<WatchProgress>()
+            .HasIndex(w => w.UpdatedAt);
     }
 }
