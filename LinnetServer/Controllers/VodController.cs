@@ -79,7 +79,7 @@ public class VodController(IOptions<ApiClientOptions> apiOptions, ApiClient api,
             .OrderBy(s => s.SeasonNumber)
             .Select(s => s.Season);
 
-        return Ok(new { info.Info, Seasons = seasons });
+        return Ok(new { SeriesId = seriesId, info.Info, Seasons = seasons });
     }
 
     private static IEnumerable<object> MapEpisodes(IEnumerable<SeriesEpisode> episodes, ApiClientOptions opts) =>
