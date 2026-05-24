@@ -49,7 +49,7 @@ public class ProgressController(AppDbContext db) : ControllerBase
 
         if (existing is null)
         {
-            db.WatchProgressItems.Add(new WatchProgress
+            existing = new WatchProgress
             {
                 ContentType = request.ContentType,
                 StreamId = request.StreamId,
@@ -63,7 +63,8 @@ public class ProgressController(AppDbContext db) : ControllerBase
                 IsCompleted = request.IsCompleted,
                 CreatedAt = now,
                 UpdatedAt = now,
-            });
+            };
+            db.WatchProgressItems.Add(existing);
         }
         else
         {
@@ -79,7 +80,19 @@ public class ProgressController(AppDbContext db) : ControllerBase
         }
 
         await db.SaveChangesAsync();
-        return NoContent();
+        return Ok(new WatchProgressItem(
+            existing.Id,
+            existing.ContentType,
+            existing.StreamId,
+            existing.Title,
+            existing.CoverUrl,
+            existing.DurationSeconds,
+            existing.SeriesId,
+            existing.SeasonNumber,
+            existing.EpisodeNumber,
+            existing.PositionSeconds,
+            existing.IsCompleted,
+            existing.UpdatedAt));
     }
 
     [HttpGet]
