@@ -37,8 +37,6 @@ public record WatchProgressItem(
 [Route("api/v1/progress")]
 public class ProgressController(AppDbContext db) : ControllerBase
 {
-    private static readonly TimeSpan RecentlyCompletedWindow = TimeSpan.FromDays(7);
-
     [HttpPost]
     public async Task<IActionResult> Upsert([FromBody] UpsertWatchProgressRequest request)
     {
@@ -98,11 +96,8 @@ public class ProgressController(AppDbContext db) : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetInProgress()
     {
-        var cutoff = DateTime.UtcNow - RecentlyCompletedWindow;
-
         var items = await db.WatchProgressItems
-            .Where(w => (!w.IsCompleted && w.PositionSeconds > 0)
-                     || (w.IsCompleted && w.UpdatedAt >= cutoff))
+            .Where(w => !w.IsCompleted)
             .OrderByDescending(w => w.UpdatedAt)
             .Select(w => new WatchProgressItem(
                 w.Id,
