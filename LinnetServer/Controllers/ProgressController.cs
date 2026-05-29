@@ -117,6 +117,36 @@ public class ProgressController(AppDbContext db) : ControllerBase
         return Ok(items);
     }
 
+    [HttpGet("movie/{streamId}")]
+    public async Task<IActionResult> GetMovieProgress(string streamId)
+    {
+        var item = await db.WatchProgressItems
+            .FirstOrDefaultAsync(w => w.ContentType == WatchProgressContentType.Movie && w.StreamId == streamId);
+
+        if (item is null) return NotFound();
+
+        return Ok(new WatchProgressItem(
+            item.Id, item.ContentType, item.StreamId, item.Title, item.CoverUrl,
+            item.DurationSeconds, item.SeriesId, item.SeasonNumber, item.EpisodeNumber,
+            item.PositionSeconds, item.IsCompleted, item.UpdatedAt));
+    }
+
+    [HttpGet("series/{seriesId}")]
+    public async Task<IActionResult> GetSeriesProgress(int seriesId)
+    {
+        var items = await db.WatchProgressItems
+            .Where(w => w.ContentType == WatchProgressContentType.Episode && w.SeriesId == seriesId)
+            .OrderBy(w => w.SeasonNumber)
+            .ThenBy(w => w.EpisodeNumber)
+            .Select(w => new WatchProgressItem(
+                w.Id, w.ContentType, w.StreamId, w.Title, w.CoverUrl,
+                w.DurationSeconds, w.SeriesId, w.SeasonNumber, w.EpisodeNumber,
+                w.PositionSeconds, w.IsCompleted, w.UpdatedAt))
+            .ToListAsync();
+
+        return Ok(items);
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
