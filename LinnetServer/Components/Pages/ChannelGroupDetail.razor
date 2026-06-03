@@ -4,6 +4,7 @@
 @inject ApiClient Api
 @inject EpgUpdateQueue EpgQueue
 @inject TvLogoService LogoService
+@inject IWebHostEnvironment Env
 @implements IDisposable
 
 @if (_group is null)
@@ -354,6 +355,15 @@ else
                 }
             </div>
 
+            <div class="flex items-center gap-3 mb-4">
+                <InputFile OnChange="UploadLogo" accept="image/*" class="file-input file-input-bordered file-input-sm flex-1"
+                           disabled="@_assigningLogo" />
+                @if (_uploadError is not null)
+                {
+                    <span class="text-error text-sm">@_uploadError</span>
+                }
+            </div>
+
             <input type="text" class="input input-bordered w-full mb-4" placeholder="Search logos…" @bind="_logoSearch"
                    @bind:event="oninput" />
 
@@ -437,6 +447,7 @@ else
     private ChannelGroupItem? _logoPickerItem;
     private string _logoSearch = string.Empty;
     private bool _assigningLogo;
+    private string? _uploadError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -661,6 +672,7 @@ else
     {
         _logoPickerItem = item;
         _logoSearch = !string.IsNullOrEmpty(item.EpgChannelId) ? item.EpgChannelId : string.Empty;
+        _uploadError = null;
     }
 
     private void CloseLogoPicker() => _logoPickerItem = null;
@@ -688,6 +700,49 @@ else
         _logoPickerItem.CustomLogoPath = null;
         await Db.SaveChangesAsync();
         _logoPickerItem = null;
+    }
+
+    private async Task UploadLogo(InputFileChangeEventArgs e)
+    {
+        if (_logoPickerItem is null || _assigningLogo) return;
+        _uploadError = null;
+
+        const long maxBytes = 2 * 1024 * 1024; // 2 MB
+        var file = e.File;
+
+        if (file.Size > maxBytes)
+        {
+            _uploadError = "File must be under 2 MB.";
+            return;
+        }
+
+        _assigningLogo = true;
+        try
+        {
+            var ext = Path.GetExtension(file.Name).ToLowerInvariant();
+            if (ext is not (".png" or ".jpg" or ".jpeg" or ".svg" or ".webp"))
+                ext = ".png";
+
+            var fileName = $"upload-{_logoPickerItem.Id}-{Guid.NewGuid():N}{ext}";
+            var logosDir = Path.Combine(Env.WebRootPath, "logos");
+            var filePath = Path.Combine(logosDir, fileName);
+
+            await using (var stream = file.OpenReadStream(maxBytes))
+            await using (var dest = File.Create(filePath))
+                await stream.CopyToAsync(dest);
+
+            _logoPickerItem.CustomLogoPath = $"/logos/{fileName}";
+            await Db.SaveChangesAsync();
+            _logoPickerItem = null;
+        }
+        catch
+        {
+            _uploadError = "Upload failed. Please try again.";
+        }
+        finally
+        {
+            _assigningLogo = false;
+        }
     }
 
     private void OnEpgQueueChanged() =>
