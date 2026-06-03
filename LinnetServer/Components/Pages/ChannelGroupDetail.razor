@@ -42,7 +42,10 @@ else
             </div>
             @if (_group.Type == ChannelGroupType.Live)
             {
-                <button class="btn btn-primary btn-sm" @onclick="OpenAddModal">Add Channels</button>
+                <div class="flex gap-2">
+                    <button class="btn btn-ghost btn-sm" @onclick="OpenAddCustomModal">Add Custom Channel</button>
+                    <button class="btn btn-primary btn-sm" @onclick="OpenAddModal">Add Channels</button>
+                </div>
             }
         </div>
 
@@ -107,7 +110,11 @@ else
                                             {
                                                 <a href="/groups/@Id/channels/@item.Id"
                                                    class="font-medium link link-hover">@item.ChannelName</a>
-                                                @if (EpgQueue.IsInProgress(item.Id))
+                                                @if (item.IsManual)
+                                                {
+                                                    <span class="badge badge-ghost badge-sm">Custom</span>
+                                                }
+                                                @if (!item.IsManual && EpgQueue.IsInProgress(item.Id))
                                                 {
                                                     <span class="loading loading-spinner loading-xs text-base-content/40"
                                                           title="Fetching EPG guide…"></span>
@@ -315,6 +322,27 @@ else
         <div class="modal-backdrop" @onclick="CloseAddModal"></div>
     </dialog>
 
+    <!-- Add Custom Channel modal -->
+    <dialog class="modal @(_showAddCustomModal ? "modal-open" : "")">
+        <div class="modal-box max-w-sm">
+            <h3 class="font-bold text-lg mb-4">Add Custom Channel</h3>
+            <div class="space-y-3">
+                <input class="input input-bordered w-full" @bind="_customChannelName" @bind:event="oninput"
+                       placeholder="Channel name" maxlength="100" />
+                <input class="input input-bordered w-full" @bind="_customStreamUrl" @bind:event="oninput"
+                       placeholder="Stream URL" />
+            </div>
+            <div class="modal-action">
+                <button class="btn btn-ghost" @onclick="CloseAddCustomModal">Cancel</button>
+                <button class="btn btn-primary" @onclick="AddCustomChannel"
+                        disabled="@(string.IsNullOrWhiteSpace(_customChannelName) || string.IsNullOrWhiteSpace(_customStreamUrl))">
+                    Add
+                </button>
+            </div>
+        </div>
+        <div class="modal-backdrop" @onclick="CloseAddCustomModal"></div>
+    </dialog>
+
     <!-- Logo Picker modal -->
     <dialog class="modal @(_logoPickerItem is not null ? "modal-open" : "")">
         <div class="modal-box w-11/12 max-w-2xl">
@@ -385,7 +413,7 @@ else
     private ChannelGroup? _group;
     private List<ChannelGroupItem> _items = [];
 
-    private HashSet<int> _addedStreamIds = [];
+    private HashSet<int?> _addedStreamIds = [];
 
     private ChannelGroupItem? _editingItem;
     private string _editingName = string.Empty;
@@ -401,6 +429,10 @@ else
     private List<LiveCategoryResponse> _categories = [];
     private LiveCategoryResponse? _selectedCategory;
     private List<LiveStreamResponse> _streams = [];
+
+    private bool _showAddCustomModal;
+    private string _customChannelName = string.Empty;
+    private string _customStreamUrl = string.Empty;
 
     private ChannelGroupItem? _logoPickerItem;
     private string _logoSearch = string.Empty;
@@ -583,13 +615,44 @@ else
         await Db.SaveChangesAsync();
 
         _items.Remove(item);
-        _addedStreamIds.Remove(item.StreamId);
+        if (item.StreamId.HasValue) _addedStreamIds.Remove(item.StreamId);
     }
 
     private async Task ToggleFavorite(ChannelGroupItem item)
     {
         item.IsFavorite = !item.IsFavorite;
         await Db.SaveChangesAsync();
+    }
+
+    private void OpenAddCustomModal()
+    {
+        _customChannelName = string.Empty;
+        _customStreamUrl = string.Empty;
+        _showAddCustomModal = true;
+    }
+
+    private void CloseAddCustomModal() => _showAddCustomModal = false;
+
+    private async Task AddCustomChannel()
+    {
+        var nextOrder = _items.Count > 0 ? _items.Max(i => i.SortOrder) + 1 : 1;
+        var item = new ChannelGroupItem
+        {
+            ChannelGroupId = Id,
+            ChannelName = _customChannelName.Trim(),
+            ManualStreamUrl = _customStreamUrl.Trim(),
+            IsManual = true,
+            StreamIcon = string.Empty,
+            CategoryId = string.Empty,
+            EpgChannelId = string.Empty,
+            SortOrder = nextOrder,
+        };
+
+        Db.ChannelGroupItems.Add(item);
+        await Db.SaveChangesAsync();
+
+        _items.Add(item);
+        _showAddCustomModal = false;
     }
 
     private void CloseAddModal() => _showAddModal = false;

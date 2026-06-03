@@ -4,7 +4,9 @@ public class ChannelGroupItem
 {
     public int Id { get; set; }
     public int ChannelGroupId { get; set; }
-    public int StreamId { get; set; }
+    public int? StreamId { get; set; }
+    public bool IsManual { get; set; }
+    public string? ManualStreamUrl { get; set; }
     public string ChannelName { get; set; } = string.Empty;
     public string StreamIcon { get; set; } = string.Empty;
     public string CategoryId { get; set; } = string.Empty;

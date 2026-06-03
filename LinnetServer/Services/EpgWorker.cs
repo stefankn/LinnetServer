@@ -86,9 +86,11 @@ public partial class EpgWorker(
             return 0;
         }
 
-        LogFetchingEpg(logger, item.ChannelName, item.StreamId);
+        if (item.IsManual || item.StreamId is null) return 0;
 
-        var listings = await api.GetEpgGuideAsync(item.StreamId);
+        LogFetchingEpg(logger, item.ChannelName, item.StreamId.Value);
+
+        var listings = await api.GetEpgGuideAsync(item.StreamId.Value);
 
         var programs = listings
             .Where(l => long.TryParse(l.StartTimestamp, out _) && long.TryParse(l.EndTimestamp, out _))
@@ -142,7 +144,7 @@ public partial class EpgWorker(
     private static partial void LogChannelGroupItemNotFound(ILogger logger, int id);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Fetching EPG guide for channel {Name} (stream {StreamId})")]
-    private static partial void LogFetchingEpg(ILogger logger, string name, int streamId);
+    private static partial void LogFetchingEpg(ILogger logger, string name, int? streamId);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "EPG fetch failed for ChannelGroupItem {Id} (attempt {Attempt}/{Max}), retrying in {Delay}s: {Message}")]
     private static partial void LogEpgFetchRetry(ILogger logger, int id, int attempt, int max, int delay, string message);
