@@ -62,7 +62,7 @@ public class GroupsController(AppDbContext db, IOptions<ApiClientOptions> apiOpt
             c.IsManual,
             StreamUrl = c.IsManual
                 ? c.ManualStreamUrl
-                : c.StreamId is int sid ? $"{opts.BaseUrl}/live/{opts.Username}/{opts.Password}/{sid}" : null,
+                : c.StreamId is int sid ? $"{opts.BaseUrl}/{opts.Username}/{opts.Password}/{sid}" : null,
             c.CurrentProgram
         });
 
