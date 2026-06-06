@@ -102,33 +102,25 @@ else
                                                     </svg>
                                                 </div>
                                             </button>
-                                            @if (_editingItem == item)
+                                            <a href="/groups/@Id/channels/@item.Id"
+                                               class="font-medium link link-hover">@item.ChannelName</a>
+                                            @if (item.IsManual)
                                             {
-                                                <input class="input input-bordered input-sm flex-1" @bind="_editingName"
-                                                       @bind:event="oninput" @onkeydown="OnChannelRenameKeyDown" />
+                                                <span class="badge badge-ghost badge-sm">Custom</span>
                                             }
-                                            else
+                                            @if (!item.IsManual && EpgQueue.IsInProgress(item.Id))
                                             {
-                                                <a href="/groups/@Id/channels/@item.Id"
-                                                   class="font-medium link link-hover">@item.ChannelName</a>
-                                                @if (item.IsManual)
-                                                {
-                                                    <span class="badge badge-ghost badge-sm">Custom</span>
-                                                }
-                                                @if (!item.IsManual && EpgQueue.IsInProgress(item.Id))
-                                                {
-                                                    <span class="loading loading-spinner loading-xs text-base-content/40"
-                                                          title="Fetching EPG guide…"></span>
-                                                }
-                                                <button class="btn btn-ghost btn-xs btn-square opacity-0 group-hover:opacity-100"
-                                                        @onclick="() => StartEditChannel(item)" title="Rename channel">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none"
-                                                         viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                              d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H7v-3a2 2 0 01.586-1.414z" />
-                                                    </svg>
-                                                </button>
+                                                <span class="loading loading-spinner loading-xs text-base-content/40"
+                                                      title="Fetching EPG guide…"></span>
                                             }
+                                            <button class="btn btn-ghost btn-xs btn-square opacity-0 group-hover:opacity-100"
+                                                    @onclick="() => OpenEditChannelModal(item)" title="Edit channel">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none"
+                                                     viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                          d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H7v-3a2 2 0 01.586-1.414z" />
+                                                </svg>
+                                            </button>
                                         </div>
                                     </td>
                                     <td class="text-base-content/50 text-sm">@(string.IsNullOrEmpty(item.EpgChannelId) ? "—" :
@@ -150,36 +142,13 @@ else
                                             </button>
                                         </td>
                                         <td>
-                                            @if (_editingItem == item)
-                                            {
-                                                <div class="flex gap-1">
-                                                    <button class="btn btn-ghost btn-xs text-success" @onclick="SaveChannelRename"
-                                                            disabled="@(string.IsNullOrWhiteSpace(_editingName))">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                                                             viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                                  d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                    </button>
-                                                    <button class="btn btn-ghost btn-xs" @onclick="CancelEditChannel">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                                                             viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                                  d="M6 18L18 6M6 6l12 12" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <button class="btn btn-ghost btn-xs text-error" @onclick="() => RemoveChannel(item)">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                                                         stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                              d="M6 18L18 6M6 6l12 12" />
-                                                    </svg>
-                                                </button>
-                                            }
+                                            <button class="btn btn-ghost btn-xs text-error opacity-0 group-hover:opacity-100" @onclick="() => RemoveChannel(item)">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                                     stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                          d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
                                         </td>
                                     </tr>
                                 }
@@ -332,6 +301,8 @@ else
                        placeholder="Channel name" maxlength="100" />
                 <input class="input input-bordered w-full" @bind="_customStreamUrl" @bind:event="oninput"
                        placeholder="Stream URL" />
+                <input class="input input-bordered w-full" @bind="_customEpgChannelId" @bind:event="oninput"
+                       placeholder="EPG channel ID (optional)" />
             </div>
             <div class="modal-action">
                 <button class="btn btn-ghost" @onclick="CloseAddCustomModal">Cancel</button>
@@ -342,6 +313,32 @@ else
             </div>
         </div>
         <div class="modal-backdrop" @onclick="CloseAddCustomModal"></div>
+    </dialog>
+
+    <!-- Edit Channel modal -->
+    <dialog class="modal @(_editChannelItem is not null ? "modal-open" : "")">
+        <div class="modal-box max-w-sm">
+            <h3 class="font-bold text-lg mb-4">Edit Channel</h3>
+            <div class="space-y-3">
+                <input class="input input-bordered w-full" @bind="_editChannelName" @bind:event="oninput"
+                       placeholder="Channel name" maxlength="100" />
+                @if (_editChannelItem?.IsManual == true)
+                {
+                    <input class="input input-bordered w-full" @bind="_editChannelStreamUrl" @bind:event="oninput"
+                           placeholder="Stream URL" />
+                    <input class="input input-bordered w-full" @bind="_editChannelEpgId" @bind:event="oninput"
+                           placeholder="EPG channel ID (optional)" />
+                }
+            </div>
+            <div class="modal-action">
+                <button class="btn btn-ghost" @onclick="CloseEditChannelModal">Cancel</button>
+                <button class="btn btn-primary" @onclick="SaveEditChannel"
+                        disabled="@(string.IsNullOrWhiteSpace(_editChannelName) || (_editChannelItem?.IsManual == true && string.IsNullOrWhiteSpace(_editChannelStreamUrl)))">
+                    Save
+                </button>
+            </div>
+        </div>
+        <div class="modal-backdrop" @onclick="CloseEditChannelModal"></div>
     </dialog>
 
     <!-- Logo Picker modal -->
@@ -425,8 +422,10 @@ else
 
     private HashSet<int?> _addedStreamIds = [];
 
-    private ChannelGroupItem? _editingItem;
-    private string _editingName = string.Empty;
+    private ChannelGroupItem? _editChannelItem;
+    private string _editChannelName = string.Empty;
+    private string _editChannelStreamUrl = string.Empty;
+    private string _editChannelEpgId = string.Empty;
 
     private bool _showRenameModal;
     private string _renameValue = string.Empty;
@@ -443,6 +442,7 @@ else
     private bool _showAddCustomModal;
     private string _customChannelName = string.Empty;
     private string _customStreamUrl = string.Empty;
+    private string _customEpgChannelId = string.Empty;
 
     private ChannelGroupItem? _logoPickerItem;
     private string _logoSearch = string.Empty;
@@ -462,7 +462,7 @@ else
         _group = null;
         _items = [];
         _addedStreamIds = [];
-        _editingItem = null;
+        _editChannelItem = null;
 
         _group = await Db.ChannelGroups.FindAsync(Id);
         if (_group is null)
@@ -480,28 +480,29 @@ else
         _addedStreamIds = _items.Select(i => i.StreamId).ToHashSet();
     }
 
-    private void StartEditChannel(ChannelGroupItem item)
+    private void OpenEditChannelModal(ChannelGroupItem item)
     {
-        _editingItem = item;
-        _editingName = item.ChannelName;
+        _editChannelItem = item;
+        _editChannelName = item.ChannelName;
+        _editChannelStreamUrl = item.ManualStreamUrl ?? string.Empty;
+        _editChannelEpgId = item.EpgChannelId;
     }
 
-    private void CancelEditChannel() => _editingItem = null;
+    private void CloseEditChannelModal() => _editChannelItem = null;
 
-    private async Task SaveChannelRename()
+    private async Task SaveEditChannel()
     {
-        var name = _editingName.Trim();
-        if (string.IsNullOrEmpty(name) || _editingItem is null) return;
+        if (_editChannelItem is null || string.IsNullOrWhiteSpace(_editChannelName)) return;
 
-        _editingItem.ChannelName = name;
+        _editChannelItem.ChannelName = _editChannelName.Trim();
+        if (_editChannelItem.IsManual)
+        {
+            _editChannelItem.ManualStreamUrl = _editChannelStreamUrl.Trim();
+            _editChannelItem.EpgChannelId = _editChannelEpgId.Trim();
+        }
+
         await Db.SaveChangesAsync();
-        _editingItem = null;
-    }
-
-    private async Task OnChannelRenameKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter") await SaveChannelRename();
-        else if (e.Key == "Escape") CancelEditChannel();
+        _editChannelItem = null;
     }
 
     private void OpenRenameModal()
@@ -639,6 +640,7 @@ else
     {
         _customChannelName = string.Empty;
         _customStreamUrl = string.Empty;
+        _customEpgChannelId = string.Empty;
         _showAddCustomModal = true;
     }
 
@@ -655,7 +657,7 @@ else
             IsManual = true,
             StreamIcon = string.Empty,
             CategoryId = string.Empty,
-            EpgChannelId = string.Empty,
+            EpgChannelId = _customEpgChannelId.Trim(),
             SortOrder = nextOrder,
         };
 

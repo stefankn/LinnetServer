@@ -42,7 +42,8 @@ public partial class EpgRefreshWorker(
         var cutoff = DateTime.UtcNow - StaleThreshold;
 
         var staleIds = await db.ChannelGroupItems
-            .Where(c => !c.IsManual && (c.EpgFetchFailed || c.EpgLastUpdated == null || c.EpgLastUpdated < cutoff))
+            .Where(c => (!c.IsManual || !string.IsNullOrEmpty(c.EpgChannelId))
+                     && (c.EpgFetchFailed || c.EpgLastUpdated == null || c.EpgLastUpdated < cutoff))
             .Select(c => c.Id)
             .ToListAsync(ct);
 

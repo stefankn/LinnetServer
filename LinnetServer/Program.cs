@@ -41,6 +41,8 @@ try
     builder.Services.AddHttpClient("vod-download");
 
     builder.Services.AddSingleton<ChannelGroupsState>();
+    builder.Services.AddHttpClient("xmltv-epg");
+    builder.Services.AddSingleton<XmltvEpgService>();
     builder.Services.AddSingleton<EpgUpdateQueue>();
     builder.Services.AddHostedService<EpgWorker>();
     builder.Services.AddSingleton<EpgRefreshWorker>();

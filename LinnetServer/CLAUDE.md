@@ -31,13 +31,13 @@ LinnetServer is an ASP.NET Core 10 application for managing IPTV channel groups 
 
 **REST API** (`Controllers/`) — Two controllers expose channel/group data for external consumers (e.g. media players). API documentation is available via Scalar at `/scalar/v1`.
 
-**Data layer** (`Data/`) — EF Core 9 with PostgreSQL. Three entities: `ChannelGroup`, `ChannelGroupItem` (a channel within a group, with EPG channel ID and stream URL), and `ChannelProgram` (program entries with start/end times). Connection string is configured in `appsettings.json`.
+**Data layer** (`Data/`) — EF Core 9 with PostgreSQL. Three entities: `ChannelGroup`, `ChannelGroupItem` (a channel within a group, with EPG channel ID and stream URL), and `ChannelProgram` (program entries with start/end times). Connection string is configured in `appsettings.json`. `ChannelGroupItem` has `IsManual` and `ManualStreamUrl` fields for custom channels added by the user rather than sourced from the IPTV provider.
 
-**Services** (`Services/`) — `ApiClient` fetches data from an external IPTV provider API using URL-based auth. EPG titles and descriptions from the provider are base64-encoded and decoded in the service layer.
+**Services** (`Services/`) — `ApiClient` fetches data from an external IPTV provider API using URL-based auth. EPG titles and descriptions from the provider are base64-encoded and decoded in the service layer. `XmltvEpgService` fetches and parses a secondary XMLTV-format EPG feed (Rakuten), caching the result in memory for 1 hour; it is used as the EPG source for manual/custom channels.
 
 **Background workers** (`Services/`) — Two `BackgroundService` implementations:
-- `EpgWorker` — consumes from `EpgUpdateQueue`, fetches programs for each channel in batches of 100, retries up to 3 times with exponential backoff (5s/15s/30s).
-- `EpgRefreshWorker` — runs daily at 3:00 AM, queues channels whose EPG data is older than 6 days.
+- `EpgWorker` — consumes from `EpgUpdateQueue`, fetches programs for each channel in batches of 100, retries up to 3 times with exponential backoff (5s/15s/30s). For manual channels with an `EpgChannelId` set, fetches from `XmltvEpgService` instead of the IPTV provider.
+- `EpgRefreshWorker` — runs daily at 3:00 AM, queues channels whose EPG data is older than 6 days. Includes manual channels that have an `EpgChannelId`.
 
 `EpgUpdateQueue` uses `System.Threading.Channels` for async producer/consumer and `ConcurrentDictionary` to prevent duplicate enqueuing. It exposes an `OnChanged` event that Blazor components subscribe to for real-time queue status updates.
 

@@ -7,6 +7,7 @@ namespace LinnetServer.Services;
 public partial class EpgWorker(
     EpgUpdateQueue queue,
     IServiceScopeFactory scopeFactory,
+    XmltvEpgService xmltvEpgService,
     ILogger<EpgWorker> logger) : BackgroundService
 {
     private const int BatchSize = 100;
@@ -86,7 +87,11 @@ public partial class EpgWorker(
             return 0;
         }
 
-        if (item.IsManual || item.StreamId is null) return 0;
+        if (item.IsManual || item.StreamId is null)
+        {
+            if (string.IsNullOrEmpty(item.EpgChannelId)) return 0;
+            return await UpdateEpgFromXmltvAsync(db, item, ct);
+        }
 
         LogFetchingEpg(logger, item.ChannelName, item.StreamId.Value);
 
@@ -151,6 +156,48 @@ public partial class EpgWorker(
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Failed to update EPG for ChannelGroupItem {Id} after {Max} attempts")]
     private static partial void LogEpgUpdateFailed(ILogger logger, Exception ex, int id, int max);
+
+    private async Task<int> UpdateEpgFromXmltvAsync(AppDbContext db, ChannelGroupItem item, CancellationToken ct)
+    {
+        LogFetchingEpgFromXmltv(logger, item.ChannelName, item.EpgChannelId);
+
+        var xmltvPrograms = await xmltvEpgService.GetProgramsAsync(item.EpgChannelId, ct);
+
+        var programs = xmltvPrograms.Select(p => new ChannelProgram
+        {
+            ChannelGroupItemId = item.Id,
+            EpgId = string.Empty,
+            Title = p.Title,
+            Description = p.Description,
+            ChannelId = p.ChannelId,
+            StartTime = p.StartTime,
+            EndTime = p.EndTime,
+        }).ToList();
+
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+
+        await db.ChannelPrograms
+            .Where(p => p.ChannelGroupItemId == item.Id)
+            .ExecuteDeleteAsync(ct);
+
+        for (var i = 0; i < programs.Count; i += BatchSize)
+        {
+            db.ChannelPrograms.AddRange(programs.Skip(i).Take(BatchSize));
+            await db.SaveChangesAsync(ct);
+        }
+
+        item.EpgLastUpdated = DateTime.UtcNow;
+        item.EpgFetchFailed = false;
+        await db.SaveChangesAsync(ct);
+
+        await tx.CommitAsync(ct);
+
+        LogEpgUpdateComplete(logger, item.ChannelName, programs.Count);
+        return programs.Count;
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Fetching EPG guide for channel {Name} from XMLTV (epg channel id: {EpgChannelId})")]
+    private static partial void LogFetchingEpgFromXmltv(ILogger logger, string name, string epgChannelId);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "EPG update complete for channel {Name}: {Count} programs stored")]
     private static partial void LogEpgUpdateComplete(ILogger logger, string name, int count);
